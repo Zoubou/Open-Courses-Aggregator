@@ -1,0 +1,5 @@
+# Node dependencies (never upload)
+node_modules/
+
+# Environment variables (passwords, secrets)
+.env
