@@ -50,8 +50,9 @@ In PowerShell:
 - `$env:IMPORT_SOURCES="kaggle,kaggle2"; npm start`
 
 ### Sources
-(https://www.kaggle.com/datasets/kararhaitham/courses?resource=download),
-([)](https://www.kaggle.com/datasets/nomanturag/online-course-datasetedx-udacity-coursera/data)
+- (https://www.kaggle.com/datasets/kararhaitham/courses?resource=download)
+-
+- (https://www.kaggle.com/datasets/nomanturag/online-course-datasetedx-udacity-coursera/data)
 
 ## Data sources in this repo
 
