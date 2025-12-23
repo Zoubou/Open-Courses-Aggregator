@@ -49,11 +49,6 @@ In PowerShell:
 - `$env:IMPORT_SOURCES="kaggle2"; npm start`
 - `$env:IMPORT_SOURCES="kaggle,kaggle2"; npm start`
 
-## Deliverables
-
-- Final schema: `docs/schema.md`
-- ER diagram: `docs/erd.md` (Mermaid)
-- ETL process: `docs/etl.md`
 
 ## Data sources in this repo
 
