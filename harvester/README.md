@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js (project runs in ESM mode)
-- A running MongoDB instance
+- A running MongoDB instance !!!
 
 ## Setup
 
