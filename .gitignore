@@ -1,5 +1,6 @@
 # Node dependencies (never upload)
-node_modules/
+harvester/node_modules/
+Backend/node_modules/
 
 # Environment variables (passwords, secrets)
-.env
+harvester/.env
