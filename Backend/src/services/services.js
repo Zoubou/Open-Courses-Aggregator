@@ -83,15 +83,14 @@ export function triggerSync(source) {
         const harvesterDir = path.resolve(__dirname, '../../../harvester');
         const harvesterFile = path.resolve(harvesterDir, 'index.js');
 
-        // Προσθέτουμε το { cwd: harvesterDir } για να ξέρει ο κώδικας πού να βρει τα JSON του
         exec(`node "${harvesterFile}" --source=${source}`, { cwd: harvesterDir }, (error, stdout, stderr) => {
             if (error) {
-                console.error("EXEC ERROR:", error); // Σφάλμα εκτέλεσης
+                console.error("EXEC ERROR:", error); 
             }
             if (stderr) {
-                console.error("HARVESTER STDERR:", stderr); // Σφάλμα μέσα από τον κώδικα του harvester
+                console.error("HARVESTER STDERR:", stderr);
             }
-            console.log("HARVESTER STDOUT:", stdout); // Τι εκτύπωσε αν πέτυχε
+            console.log("HARVESTER STDOUT:", stdout); 
         });
     });
 }
@@ -116,4 +115,21 @@ export async function getStats() {
     }
   ]);
   return stats[0];
+}
+
+/**
+ * Endpoint για επιλογές φίλτρων
+ */
+export async function getMetadata() {
+    const languages = await Course.distinct("language");
+    const levels = await Course.distinct("level");
+    const sources = await Course.distinct("source.name");
+    const categories = await Course.distinct("category"); 
+
+    return {
+        languages,
+        levels,
+        sources,
+        categories
+    };
 }

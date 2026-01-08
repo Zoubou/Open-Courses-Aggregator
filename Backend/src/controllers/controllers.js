@@ -58,7 +58,6 @@ export async function syncSource(req, res) {
         
         res.status(202).json({ message: `Sync started for ${source}. This may take a while.` });
         
-        // Εκτέλεση του sync στο παρασκήνιο
         await services.triggerSync(source);
     } catch (error) {
         console.error("Sync Error:", error);
@@ -71,5 +70,14 @@ export async function getAnalytics(req, res) {
         res.json(stats);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+}
+
+export async function getMetadata(req, res) {
+    try {
+        const metadata = await services.getMetadata();
+        res.json(metadata);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch metadata" });
     }
 }

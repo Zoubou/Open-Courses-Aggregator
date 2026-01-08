@@ -8,7 +8,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize the shared connection
 connectDB();
 
 app.get("/", (req, res) => {
