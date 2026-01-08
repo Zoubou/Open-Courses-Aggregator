@@ -1,45 +1,119 @@
-const db = require('../database/db.js');
+import Course from "../../../harvester/src/models/course.js";
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-async function getCourses(filters){
-    let sql = "SELECT * FROM courses";
-    const params = [];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-    if(filters.language){
-        sql += "AND language = ?";
-        params.push(filters.language);
+/**
+ * Φέρνει μαθήματα με βάση τα φίλτρα (Αναζήτηση, Γλώσσα, Επίπεδο, Πηγή)
+ */
+export async function getCourses(filters) {
+    try {
+        let query = {};
+
+        // Φίλτρο Γλώσσας
+        if (filters.language) {
+            query.language = filters.language;
+        }
+
+        // Φίλτρο Επιπέδου (beginner, intermediate, κλπ)
+        if (filters.level) {
+            query.level = filters.level;
+        }
+
+        // Φίλτρο Πηγής (π.χ. kaggle)
+        if (filters.source) {
+            query["source.name"] = filters.source;
+        }
+
+        // Φίλτρο Κατηγορίας
+        if (filters.category) {
+            query.category = filters.category;
+        }
+
+        // Αναζήτηση σε Τίτλο και Keywords (Case-insensitive)
+        if (filters.search) {
+            query.$or = [
+                { title: { $regex: filters.search, $options: "i" } },
+                { keywords: { $regex: filters.search, $options: "i" } }
+            ];
+        }
+
+        // Εκτέλεση του query στη MongoDB
+        // Περιορίζουμε τα αποτελέσματα (π.χ. 50) για καλύτερη απόδοση στο Front-end
+        return await Course.find(query).limit(50).sort({ last_update: -1 });
+    } catch (error) {
+        throw new Error("Database error while fetching courses: " + error.message);
     }
-
-    if (filters.level) {
-    sql += " AND level = ?";
-    params.push(filters.level);
-    }
-
-    if (filters.source) {
-        sql += " AND source_name = ?";
-        params.push(filters.source);
-    }
-
-    if (filters.category) {
-        sql += " AND category = ?";
-        params.push(filters.category);
-    }
-
-    if (filters.search) {
-        sql += " AND (title LIKE ? OR keywords LIKE ?)";
-        params.push(`%${filters.search}%`);
-        params.push(`%${filters.search}%`);
-    }
-
-    const [rows] = await db.query(sql, params);
-    return rows;
 }
 
-async function getCourseById(id){
-    const [row] = await db.query("SELECT * FROM courses WHERE id = ?", [id]);
-    return row;
+/**
+ * Φέρνει ένα συγκεκριμένο μάθημα βάσει ID
+ */
+export async function getCourseById(id) {
+    try {
+        return await Course.findById(id);
+    } catch (error) {
+        throw new Error("Database error while fetching course by ID: " + error.message);
+    }
 }
 
-module.exports = {
-    getCourses,
-    getCourseById
-};
+/**
+ * Endpoint για Spark Recommendations
+ */
+export async function getSimilarCourses(id) {
+    try {
+        // Προς το παρόν επιστρέφει κενό array ή mock data 
+        // μέχρι να τρέξει το Spark job και να αποθηκεύσει similarities
+        const course = await Course.findById(id);
+        if (!course || !course.similar_ids) return [];
+        
+        return await Course.find({ _id: { $in: course.similar_ids } });
+    } catch (error) {
+        return [];
+    }
+}
+
+/**
+ * Endpoint για συγχρονισμό με harvester
+ */
+export function triggerSync(source) {
+    return new Promise((resolve, reject) => {
+        const harvesterDir = path.resolve(__dirname, '../../../harvester');
+        const harvesterFile = path.resolve(harvesterDir, 'index.js');
+
+        // Προσθέτουμε το { cwd: harvesterDir } για να ξέρει ο κώδικας πού να βρει τα JSON του
+        exec(`node "${harvesterFile}" --source=${source}`, { cwd: harvesterDir }, (error, stdout, stderr) => {
+            if (error) {
+                console.error("EXEC ERROR:", error); // Σφάλμα εκτέλεσης
+            }
+            if (stderr) {
+                console.error("HARVESTER STDERR:", stderr); // Σφάλμα μέσα από τον κώδικα του harvester
+            }
+            console.log("HARVESTER STDOUT:", stdout); // Τι εκτύπωσε αν πέτυχε
+        });
+    });
+}
+
+/**
+ * Endpoint για στατιστικά
+ */
+export async function getStats() {
+  const stats = await Course.aggregate([
+    {
+      $facet: {
+        "bySource": [
+          { $group: { _id: "$source.name", count: { $sum: 1 } } }
+        ],
+        "byLevel": [
+          { $group: { _id: "$level", count: { $sum: 1 } } }
+        ],
+        "total": [
+          { $count: "count" }
+        ]
+      }
+    }
+  ]);
+  return stats[0];
+}
