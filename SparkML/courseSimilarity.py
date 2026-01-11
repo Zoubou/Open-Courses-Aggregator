@@ -4,7 +4,6 @@ from pyspark.sql.functions import (
     col, concat_ws, lower, regexp_replace,
     row_number, collect_list, struct, pandas_udf,expr
 )
-from pyspark.sql.types import DoubleType
 from pyspark.sql.window import Window
 
 from pyspark.ml import Pipeline
@@ -30,15 +29,16 @@ df = spark.read.format("mongodb").load()
 df = df.withColumn(
     "text",
     concat_ws(" ",
-        col("title"), col("title"), col("title"),     # boost title
-        col("keywords"), col("keywords"),             # boost keywords
+        col("title"), col("title"), col("title"),     # weight title
+        col("keywords"), col("keywords"),             # weight keywords
         col("level"),
         col("description")
     )
 )
-
+#format text
 df = df.withColumn("text", lower(col("text")))
 df = df.withColumn("text", regexp_replace(col("text"), "[^\\p{L}\\p{Nd}\\s]", " "))
+
 # process and feature extraction of data
 # tokenization
 tokenizer = RegexTokenizer(
@@ -46,6 +46,7 @@ tokenizer = RegexTokenizer(
     outputCol="raw_tokens",
     pattern="\\s+"
 )
+
 # stop words removal
 languages = ["english", "spanish", "french", "german", "portuguese","italian","russian"]
 all_stop_words = []
@@ -57,18 +58,19 @@ remover = StopWordsRemover(
     outputCol="tokens", 
     stopWords=all_stop_words  
 )
+
 # TF-IDF
 cv = CountVectorizer(
     inputCol="tokens",
     outputCol="rawFeatures",
-    vocabSize=10000,
-    minDF=3
+    vocabSize=5000,
+    minDF=5
 )
-
 idf = IDF(
     inputCol="rawFeatures", 
     outputCol="features"
 )
+
 # normalization
 normalizer = Normalizer(
     inputCol="features",
