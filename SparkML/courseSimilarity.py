@@ -35,8 +35,7 @@ df = df.withColumn(
     )
 )
 #format text
-df = df.withColumn("text", lower(col("text")))
-df = df.withColumn("text", regexp_replace(col("text"), "[^\\p{L}\\p{Nd}\\s]", " "))
+df = df.withColumn("text", regexp_replace(lower(col("text")), "[^\\p{L}\\p{Nd}\\s]", " "))
 
 # process and feature extraction of data
 # tokenization
@@ -62,8 +61,8 @@ remover = StopWordsRemover(
 cv = CountVectorizer(
     inputCol="tokens",
     outputCol="rawFeatures",
-    vocabSize=5000,
-    minDF=5
+    vocabSize=2000,  # Reduced from 5000
+    minDF=10         # Increased from 5 to filter rare words
 )
 idf = IDF(
     inputCol="rawFeatures", 
@@ -81,13 +80,13 @@ normalizer = Normalizer(
 pipeline = Pipeline(stages=[tokenizer,remover, cv, idf, normalizer])
 model = pipeline.fit(df)
 
-tfidf_df = model.transform(df).select("_id", "title", "normFeatures")
+tfidf_df = model.transform(df).select("_id", "title", "normFeatures").cache()
 
 lsh = BucketedRandomProjectionLSH(
     inputCol="normFeatures",
     outputCol="hashes",
-    bucketLength=2.0,
-    numHashTables=4
+    bucketLength=4.0,    # Increased from 2.0
+    numHashTables=3      # Reduced from 4
 )
 
 lsh_model = lsh.fit(tfidf_df)
