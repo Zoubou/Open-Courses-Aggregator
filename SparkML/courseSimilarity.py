@@ -1,8 +1,7 @@
-import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, concat_ws, lower, regexp_replace,
-    row_number, collect_list, struct, pandas_udf,expr
+    row_number, collect_list, struct,expr
 )
 from pyspark.sql.window import Window
 
