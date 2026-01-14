@@ -38,16 +38,19 @@ export async function getCourseById(req, res) {
     }
 }
 
+
 export async function getSimilarCourses(req, res) {
     try {
-        const id = req.params.id;
+        const { id } = req.params;
+        const result = await services.getSimilarCourses(id);
         
-        // Εδώ θα καλέσουμε το service που θα διαβάζει τα αποτελέσματα του Spark
-        const similarCourses = await services.getSimilarCourses(id);
-        res.json(similarCourses);
+        if (!result) {
+            return res.status(404).json({ message: "No similar courses found for this ID" });
+        }
+
+        res.json(result.similar_courses); 
     } catch (error) {
-        console.error("Controller Error (getSimilarCourses):", error);
-        res.status(500).json({ error: "Server error" });
+        res.status(500).json({ error: error.message });
     }
 }
 

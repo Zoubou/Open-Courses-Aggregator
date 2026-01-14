@@ -2,6 +2,7 @@ import Course from "../../../harvester/src/models/course.js";
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -62,17 +63,10 @@ export async function getCourseById(id) {
 /**
  * Endpoint για Spark Recommendations
  */
-export async function getSimilarCourses(id) {
-    try {
-        // Προς το παρόν επιστρέφει κενό array ή mock data 
-        // μέχρι να τρέξει το Spark job και να αποθηκεύσει similarities
-        const course = await Course.findById(id);
-        if (!course || !course.similar_ids) return [];
-        
-        return await Course.find({ _id: { $in: course.similar_ids } });
-    } catch (error) {
-        return [];
-    }
+export async function getSimilarCourses(courseId) {
+    const Similarity = mongoose.connection.collection('courses_similarities');
+    
+    return await Similarity.findOne({ course_id: courseId });
 }
 
 /**
