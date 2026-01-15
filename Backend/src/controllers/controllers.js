@@ -48,12 +48,14 @@ export async function getSimilarCourses(req, res) {
         const result = await services.getSimilarCourses(id);
         
         if (!result) {
-            return res.status(404).json({ message: "No similar courses found for this ID" });
+            return res.status(200).json([]);
         }
 
-        res.json(result.similar_courses); 
+        const similarCourses = result.similar_courses || [];
+        res.json(similarCourses); 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("getSimilarCourses error:", error);
+        res.status(200).json([]);
     }
 }
 

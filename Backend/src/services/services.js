@@ -93,9 +93,14 @@ export async function getCourseById(id) {
  * Endpoint για Spark Recommendations
  */
 export async function getSimilarCourses(courseId) {
-    const Similarity = mongoose.connection.collection('courses_similarities');
-    
-    return await Similarity.findOne({ course_id: courseId });
+    try {
+        const Similarity = mongoose.connection.collection('courses_similarities');
+        const result = await Similarity.findOne({ course_id: courseId });
+        return result || { similar_courses: [] };
+    } catch (error) {
+        console.error("Error fetching similar courses:", error.message);
+        return { similar_courses: [] };
+    }
 }
 
 /**
