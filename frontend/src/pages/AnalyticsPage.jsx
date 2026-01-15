@@ -1,21 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchAnalytics } from '../api/courses'
+import { fetchAnalytics, fetchCourses } from '../api/courses'
+import { computeAnalytics } from '../utils/analyticsHelper'
 import { Link } from 'react-router-dom'
 
 export default function AnalyticsPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isClientComputed, setIsClientComputed] = useState(false)
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true)
         setError('')
+        setIsClientComputed(false)
         const res = await fetchAnalytics()
         setData(res)
       } catch (e) {
-        setError('Failed to fetch analytics.')
+        // Fallback: compute analytics from courses
+        try {
+          const coursesData = await fetchCourses({ limit: 1000 })
+          const courses = coursesData.courses || coursesData
+          const computed = computeAnalytics(courses)
+          setData(computed)
+          setIsClientComputed(true)
+        } catch (fallbackErr) {
+          setError('Failed to fetch analytics.')
+        }
       } finally {
         setLoading(false)
       }
@@ -115,6 +127,7 @@ export default function AnalyticsPage() {
 
       <div className="muted" style={{ marginTop: 12 }}>
         Data source: <code>/courses/Analytics</code>
+        {isClientComputed && <span style={{ marginLeft: 12 }}>📊 (computed from course data)</span>}
       </div>
     </div>
   )
