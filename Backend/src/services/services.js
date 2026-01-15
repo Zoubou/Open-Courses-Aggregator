@@ -41,9 +41,38 @@ export async function getCourses(filters) {
             ];
         }
 
-        // Εκτέλεση του query στη MongoDB
-        // Περιορίζουμε τα αποτελέσματα (π.χ. 50) για καλύτερη απόδοση στο Front-end
-        return await Course.find(query).limit(50).sort({ last_update: -1 });
+        // Pagination
+        const page = Math.max(1, parseInt(filters.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(filters.limit) || 20));
+        const skip = (page - 1) * limit;
+
+        // Sorting
+        let sortOptions = { last_update: -1 }; // default
+        if (filters.sort) {
+            if (filters.sort === "newest") {
+                sortOptions = { createdAt: -1 };
+            } else if (filters.sort === "oldest") {
+                sortOptions = { createdAt: 1 };
+            } else if (filters.sort === "title-asc") {
+                sortOptions = { title: 1 };
+            } else if (filters.sort === "title-desc") {
+                sortOptions = { title: -1 };
+            }
+        }
+
+        // Εκτέλεση του query στη MongoDB με pagination
+        const [courses, total] = await Promise.all([
+            Course.find(query).skip(skip).limit(limit).sort(sortOptions),
+            Course.countDocuments(query)
+        ]);
+
+        return {
+            courses,
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit)
+        };
     } catch (error) {
         throw new Error("Database error while fetching courses: " + error.message);
     }

@@ -9,11 +9,14 @@ export async function getCourses(req, res) {
             level: req.query.level,
             source: req.query.source,
             category: req.query.category,
-            search: req.query.search
+            search: req.query.search,
+            page: req.query.page,
+            limit: req.query.limit,
+            sort: req.query.sort
         };
 
-        const courses = await services.getCourses(filters);
-        res.json(courses);
+        const result = await services.getCourses(filters);
+        res.json(result);
     } 
     catch (error) {
         console.error("Controller Error (getCourses):", error);

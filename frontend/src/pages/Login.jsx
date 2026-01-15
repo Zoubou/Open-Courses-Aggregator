@@ -1,70 +1,70 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { isAuthenticated, login } from '../auth'
+import { login } from '../auth'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [alreadyAuthed, setAlreadyAuthed] = useState(false)
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const authed = isAuthenticated()
-    setAlreadyAuthed(authed)
-    if (authed) navigate('/success', { replace: true })
-  }, [navigate])
-
-  if (alreadyAuthed) return null
-
-  function onSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
     setError('')
 
-    const ok = login(username.trim(), password)
-    if (!ok) {
-      setError('Invalid credentials. Try admin / admin.')
-      return
-    }
+    const ok = login(username, password)
 
-    navigate('/success', { replace: true })
+    if (ok) {
+      navigate('/app', { replace: true })
+    } else {
+      setError('Invalid username or password')
+    }
   }
 
   return (
-    <div className="page">
-      <div className="card">
+    <div className="page-center">
+      <div className="card narrow">
         <h1>Login</h1>
-        <p className="muted">Use username: <b>admin</b> and password: <b>admin</b>.</p>
+        <p className="muted">
+          Open Courses Aggregator – Admin access
+        </p>
 
-        <form onSubmit={onSubmit} className="form">
+        <form className="form" onSubmit={handleSubmit}>
           <label className="label">
-            Username
+            <span>Username</span>
             <input
               className="input"
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
               placeholder="admin"
+              required
             />
           </label>
 
           <label className="label">
-            Password
+            <span>Password</span>
             <input
               className="input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
               placeholder="admin"
+              required
             />
           </label>
 
-          {error ? <div className="error">{error}</div> : null}
+          {error && <p className="error">{error}</p>}
 
-          <button className="button" type="submit">Sign in</button>
+          <button className="button primary" type="submit">
+            Login
+          </button>
         </form>
+
+        <p className="hint">
+          Demo credentials: <b>admin / admin</b>
+        </p>
       </div>
     </div>
   )
