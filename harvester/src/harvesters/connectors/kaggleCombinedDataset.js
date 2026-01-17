@@ -2,6 +2,39 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import Course from "../../models/course.js";
+import { franc } from "franc";
+import langs from "langs";
+
+function normalizeLanguageField(raw) {
+  if (!raw) return undefined;
+  const s = String(raw).trim();
+  if (!s) return undefined;
+  const lower = s.toLowerCase();
+
+  // ISO 639-1 two-letter code
+  if (/^[a-z]{2}$/.test(lower)) {
+    const l = langs.where("1", lower);
+    if (l) return l.name.toLowerCase();
+  }
+
+  // ISO 639-3 three-letter code
+  if (/^[a-z]{3}$/.test(lower)) {
+    const l = langs.where("3", lower);
+    if (l) return l.name.toLowerCase();
+  }
+
+  // Plain name, return as lowercased
+  return lower;
+}
+
+function detectLanguageFromText(...texts) {
+  const text = texts.filter(Boolean).join(" ").trim();
+  if (!text || text.length < 30) return undefined;
+  const code = franc(text, { minLength: 10 });
+  if (!code || code === "und") return undefined;
+  const l = langs.where("3", code);
+  return l ? l.name.toLowerCase() : undefined;
+} 
 
 function normalizeLevel(levelRaw) {
   const s = String(levelRaw ?? "").trim().toLowerCase();
@@ -64,18 +97,21 @@ function toCourseDoc(item) {
   const title = pickTitle(item);
   const link = pickLink(item);
 
+  const normalizedLang = normalizeLanguageField(item.language);
+  const detectedLang = detectLanguageFromText(title, item.description);
+
   return {
     title,
     description: item.description ? String(item.description) : undefined,
     keywords: normalizeKeywords(item),
-    language: item.language ? String(item.language) : undefined,
+    language: normalizedLang || detectedLang || undefined,
     level: normalizeLevel(item.level),
     source: buildSource(item),
     link,
     last_update: parseDate(item.last_update),
     source_course_id: computeSourceCourseId(item),
   };
-}
+} 
 
 async function readCombinedDatasetJSON() {
   const filePath = path.resolve("src/harvesters/data/kaggle/combined_dataset.json");

@@ -11,7 +11,9 @@
     "cross-env": "^7.0.3",
     "csv-parse": "^5.6.0",
     "dotenv": "^17.2.3",
-    "mongoose": "^8.18.0"
+    "mongoose": "^8.18.0",
+    "franc": "^6.1.0",
+    "langs": "^2.0.0"
   },
   "keywords": [],
   "author": "",

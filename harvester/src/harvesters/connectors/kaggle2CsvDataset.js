@@ -5,6 +5,36 @@ import crypto from "node:crypto";
 import { parse } from "csv-parse/sync";
 
 import Course from "../../models/course.js";
+import { franc } from "franc";
+import langs from "langs";
+
+function normalizeLanguageField(raw) {
+  if (!raw) return undefined;
+  const s = String(raw).trim();
+  if (!s) return undefined;
+  const lower = s.toLowerCase();
+
+  if (/^[a-z]{2}$/.test(lower)) {
+    const l = langs.where("1", lower);
+    if (l) return l.name.toLowerCase();
+  }
+
+  if (/^[a-z]{3}$/.test(lower)) {
+    const l = langs.where("3", lower);
+    if (l) return l.name.toLowerCase();
+  }
+
+  return lower;
+}
+
+function detectLanguageFromText(...texts) {
+  const text = texts.filter(Boolean).join(" ").trim();
+  if (!text || text.length < 30) return undefined;
+  const code = franc(text, { minLength: 10 });
+  if (!code || code === "und") return undefined;
+  const l = langs.where("3", code);
+  return l ? l.name.toLowerCase() : undefined;
+} 
 
 function normalizeLevel(levelRaw) {
   const n = Number(levelRaw);
@@ -63,11 +93,13 @@ function toCourseDoc(row) {
   const platform = normalizePlatform(row.Platform);
   const level = normalizeLevel(row.Level);
 
+  const detected = detectLanguageFromText(title, row.Skills, row.Platform);
+
   return {
     title,
     description: undefined,
     keywords: splitSkills(row.Skills),
-    language: undefined,
+    language: detected || undefined,
     level,
     source: {
       name: `kaggle2_${platform}`,

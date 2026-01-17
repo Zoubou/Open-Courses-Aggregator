@@ -1,8 +1,8 @@
 import Course from "../../../harvester/src/models/course.js";
 import { exec } from 'child_process';
+import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,6 +12,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export async function getCourses(filters) {
     try {
         let query = {};
+
+        const rawLimit = Number.parseInt(filters?.limit, 10);
+        const rawOffset = Number.parseInt(filters?.offset, 10);
+
+        const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50;
+        const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
         // Φίλτρο Γλώσσας
         if (filters.language) {
@@ -41,38 +47,12 @@ export async function getCourses(filters) {
             ];
         }
 
-        // Pagination
-        const page = Math.max(1, parseInt(filters.page) || 1);
-        const limit = Math.min(100, Math.max(1, parseInt(filters.limit) || 20));
-        const skip = (page - 1) * limit;
-
-        // Sorting
-        let sortOptions = { last_update: -1 }; // default
-        if (filters.sort) {
-            if (filters.sort === "newest") {
-                sortOptions = { createdAt: -1 };
-            } else if (filters.sort === "oldest") {
-                sortOptions = { createdAt: 1 };
-            } else if (filters.sort === "title-asc") {
-                sortOptions = { title: 1 };
-            } else if (filters.sort === "title-desc") {
-                sortOptions = { title: -1 };
-            }
-        }
-
-        // Εκτέλεση του query στη MongoDB με pagination
-        const [courses, total] = await Promise.all([
-            Course.find(query).skip(skip).limit(limit).sort(sortOptions),
-            Course.countDocuments(query)
-        ]);
-
-        return {
-            courses,
-            total,
-            page,
-            limit,
-            pages: Math.ceil(total / limit)
-        };
+        // Εκτέλεση του query στη MongoDB
+                // Περιορίζουμε τα αποτελέσματα για καλύτερη απόδοση στο Front-end
+                return await Course.find(query)
+                    .sort({ last_update: -1 })
+                    .skip(offset)
+                    .limit(limit);
     } catch (error) {
         throw new Error("Database error while fetching courses: " + error.message);
     }
@@ -92,14 +72,34 @@ export async function getCourseById(id) {
 /**
  * Endpoint για Spark Recommendations
  */
-export async function getSimilarCourses(courseId) {
+export async function getSimilarCourses(id) {
     try {
-        const Similarity = mongoose.connection.collection('courses_similarities');
-        const result = await Similarity.findOne({ course_id: courseId });
-        return result || { similar_courses: [] };
+        const courseObjectId = new mongoose.Types.ObjectId(id);
+
+        // Preferred: read Spark output collection.
+        // SparkML writes recommendations into `courses_similarities`.
+        const similaritiesCollection = Course.db.collection('courses_similarities');
+        const similarityDoc = await similaritiesCollection.findOne({ course_id: courseObjectId });
+
+        if (similarityDoc?.similar_courses?.length) {
+            const sorted = [...similarityDoc.similar_courses]
+              .filter((r) => r?.similar_id)
+              .sort((a, b) => (Number(b?.cosine_similarity ?? 0) - Number(a?.cosine_similarity ?? 0)));
+
+            const similarIds = sorted.slice(0, 10).map((r) => r.similar_id);
+            const courses = await Course.find({ _id: { $in: similarIds } });
+
+            // Preserve similarity order.
+            const byId = new Map(courses.map((c) => [String(c._id), c]));
+            return similarIds.map((sid) => byId.get(String(sid))).filter(Boolean);
+        }
+
+        // Fallback: legacy approach (if course docs contain `similar_ids`).
+        const course = await Course.findById(courseObjectId);
+        if (!course?.similar_ids?.length) return [];
+        return await Course.find({ _id: { $in: course.similar_ids } });
     } catch (error) {
-        console.error("Error fetching similar courses:", error.message);
-        return { similar_courses: [] };
+        return [];
     }
 }
 
@@ -133,6 +133,12 @@ export async function getStats() {
         "bySource": [
           { $group: { _id: "$source.name", count: { $sum: 1 } } }
         ],
+                "byLanguage": [
+                    { $group: { _id: "$language", count: { $sum: 1 } } }
+                ],
+                "byCategory": [
+                    { $group: { _id: "$category", count: { $sum: 1 } } }
+                ],
         "byLevel": [
           { $group: { _id: "$level", count: { $sum: 1 } } }
         ],
