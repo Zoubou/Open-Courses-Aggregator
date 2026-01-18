@@ -10,9 +10,10 @@ def build_features(df):
     df_processed = df.withColumn(
         "text",
         concat_ws(" ",
-            col("title"), col("title"), col("title"),     # title x3 weight
-            col("keywords"), col("keywords"),             # keywords x2 weight
+            col("title"), col("title"), col("title"), col("title"),    # title x4 weight
+            col("keywords"), col("keywords"), col("keywords"),         # keywords x2 weight
             col("level"),
+            col("language"),col("language"),
             col("description")
         )
     )
