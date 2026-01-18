@@ -38,3 +38,5 @@ top_words.write.format("mongodb") \
 
 print("Clustering Job Finished!")
 spark.stop()
+
+
