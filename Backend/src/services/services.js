@@ -116,33 +116,13 @@ export async function getCourseById(id) {
  */
 export async function getSimilarCourses(id) {
     try {
-        const courseObjectId = new mongoose.Types.ObjectId(id);
-
-        // Preferred: read Spark output collection.
-        // SparkML writes recommendations into `courses_similarities`.
         const similaritiesCollection = Course.db.collection('courses_similarities');
-        const similarityDoc = await similaritiesCollection.findOne({ course_id: courseObjectId });
-
-        if (similarityDoc?.similar_courses?.length) {
-            const sorted = [...similarityDoc.similar_courses]
-              .filter((r) => r?.similar_id)
-              .sort((a, b) => (Number(b?.cosine_similarity ?? 0) - Number(a?.cosine_similarity ?? 0)));
-
-            const similarIds = sorted.slice(0, 10).map((r) => r.similar_id);
-            const courses = await Course.find({ _id: { $in: similarIds } });
-
-            // Preserve similarity order.
-            const byId = new Map(courses.map((c) => [String(c._id), c]));
-            return similarIds.map((sid) => byId.get(String(sid))).filter(Boolean);
-        }
-
-        // Fallback: legacy approach (if course docs contain `similar_ids`).
-        const course = await Course.findById(courseObjectId);
-        if (!course?.similar_ids?.length) return [];
-        return await Course.find({ _id: { $in: course.similar_ids } });
+        const similarityDoc = await similaritiesCollection.findOne({ course_id: id });
+        return similarityDoc?.similar_courses || [];
     } catch (error) {
         return [];
     }
+    
 }
 
 /**
