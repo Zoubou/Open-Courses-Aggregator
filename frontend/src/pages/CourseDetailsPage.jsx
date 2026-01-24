@@ -65,8 +65,15 @@ export default function CourseDetailsPage() {
 
   return (
     <div className="content">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 8 }}>
-        <Link to="/app" className="muted">← Back to courses</Link>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <Link to="/app" className="back-btn">
+          <span style={{ fontSize: 18, marginRight: 6 }}>←</span> Back to Courses
+        </Link>
+        <BookmarkButton
+          courseId={id}
+          isBookmarked={isBookmarked(id)}
+          onToggle={toggleBookmark}
+        />
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
@@ -76,11 +83,6 @@ export default function CourseDetailsPage() {
             {course.language || "unknown"} • {course.level || "unknown"} • {course.source?.name || "unknown"}
           </div>
         </div>
-        <BookmarkButton
-          courseId={id}
-          isBookmarked={isBookmarked(id)}
-          onToggle={toggleBookmark}
-        />
       </div>
 
       <div style={{ marginTop: 24, marginBottom: 24 }}>

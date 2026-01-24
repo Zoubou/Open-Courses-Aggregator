@@ -28,6 +28,7 @@ export default function CoursesPage() {
     language: "",
     level: "",
     source: "",
+    category: ""
   })
 
   const debouncedSearch = useDebounced(filters.search, 500)
@@ -39,6 +40,7 @@ export default function CoursesPage() {
     if (filters.language) p.language = filters.language
     if (filters.level) p.level = filters.level
     if (filters.source) p.source = filters.source
+    if (filters.category) p.category = filters.category
     // Add pagination - χρησιμοποιούμε offset αντί για page
     const page = parseInt(searchParams.get("page")) || 1
     const limit = 20
@@ -49,7 +51,7 @@ export default function CoursesPage() {
     const sort = searchParams.get("sort")
     if (sort) p.sort = sort
     return p
-  }, [debouncedSearch, filters.language, filters.level, filters.source, searchParams])
+  }, [debouncedSearch, filters.language, filters.level, filters.source, filters.category, searchParams])
 
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -117,7 +119,7 @@ export default function CoursesPage() {
   }, [queryParams, searchParams])
 
   function clearFilters() {
-    setFilters({ search: "", language: "", level: "", source: "" })
+    setFilters({ search: "", language: "", level: "", source: "", category: "" })
   }
 
   const handleRetry = () => {
