@@ -4,7 +4,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "prestart": "npm run clean:combined",
     "start": "cross-env IMPORT_SOURCES=kaggle,kaggle2 node index.js",
+    "poststart": "python scripts/fix_course_metadata.py --apply",
+    "clean:combined": "node scripts/clean_kaggle_descriptions.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
