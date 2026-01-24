@@ -10,7 +10,7 @@ export async function getCourses(req, res) {
             source: req.query.source,
             category: req.query.category,
             search: req.query.search,
-            page: req.query.page,
+            offset: req.query.offset,
             limit: req.query.limit,
             sort: req.query.sort
         };
