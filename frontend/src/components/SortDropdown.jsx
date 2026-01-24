@@ -2,11 +2,11 @@ import { useSearchParams } from "react-router-dom"
 
 export default function SortDropdown() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const currentSort = searchParams.get("sort") || "newest"
+  const currentSort = searchParams.get("sort") || "title-asc"
 
   const handleSort = (sortValue) => {
     const params = new URLSearchParams(searchParams)
-    if (sortValue === "newest") {
+    if (sortValue === "title-asc") {
       params.delete("sort")
     } else {
       params.set("sort", sortValue)
@@ -25,8 +25,6 @@ export default function SortDropdown() {
         onChange={(e) => handleSort(e.target.value)}
         aria-label="Sort courses by"
       >
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
         <option value="title-asc">Title A–Z</option>
         <option value="title-desc">Title Z–A</option>
       </select>
