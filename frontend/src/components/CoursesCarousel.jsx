@@ -1,6 +1,36 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
+// Emoji mapping based on keywords and content
+const getEmojiForCourse = (course) => {
+  const text = `${course.title} ${course.keywords?.join(" ") || ""} ${course.category || ""}`.toLowerCase()
+  
+  const emojiMap = [
+    { keywords: ["ai", "machine learning", "neural", "deep learning", "nlp"], emoji: "🤖" },
+    { keywords: ["python", "java", "javascript", "programming", "code", "coding"], emoji: "💻" },
+    { keywords: ["data", "analytics", "sql", "database"], emoji: "📊" },
+    { keywords: ["web", "html", "css", "react", "vue", "frontend"], emoji: "🌐" },
+    { keywords: ["cloud", "aws", "azure", "devops", "docker"], emoji: "☁️" },
+    { keywords: ["security", "cybersecurity", "encryption"], emoji: "🔒" },
+    { keywords: ["design", "ui", "ux", "figma"], emoji: "🎨" },
+    { keywords: ["business", "management", "marketing", "economics"], emoji: "💼" },
+    { keywords: ["finance", "investment", "trading", "crypto"], emoji: "💰" },
+    { keywords: ["math", "statistics", "calculus", "algebra"], emoji: "📐" },
+    { keywords: ["science", "physics", "chemistry", "biology"], emoji: "🔬" },
+    { keywords: ["writing", "english", "language", "communication"], emoji: "✍️" },
+    { keywords: ["music", "audio", "sound"], emoji: "🎵" },
+    { keywords: ["video", "photography", "image"], emoji: "📸" },
+  ]
+  
+  for (const { keywords, emoji } of emojiMap) {
+    if (keywords.some(kw => text.includes(kw))) {
+      return emoji
+    }
+  }
+  
+  return "📚"
+}
+
 export default function CoursesCarousel({ courses = [], title = "Recommended", isLoading = false }) {
   const scrollRef = useRef(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
@@ -22,7 +52,7 @@ export default function CoursesCarousel({ courses = [], title = "Recommended", i
         left: newScrollLeft,
         behavior: "smooth"
       })
-      setTimeout(checkScroll, 300)
+      setTimeout(checkScroll, 500)
     }
   }
 
@@ -103,11 +133,11 @@ export default function CoursesCarousel({ courses = [], title = "Recommended", i
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 24,
-                    color: "rgba(125, 125, 255, 0.5)"
+                    fontSize: 48,
+                    color: "rgba(125, 125, 255, 0.8)"
                   }}
                 >
-                  📚
+                  {getEmojiForCourse(course)}
                 </div>
               </div>
               <h4 style={{ margin: "8px 0 6px", fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>
