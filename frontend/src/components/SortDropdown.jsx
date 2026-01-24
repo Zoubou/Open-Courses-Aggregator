@@ -25,8 +25,8 @@ export default function SortDropdown() {
         onChange={(e) => handleSort(e.target.value)}
         aria-label="Sort courses by"
       >
-        <option value="title-asc">Title A–Z</option>
-        <option value="title-desc">Title Z–A</option>
+        <option value="title-asc">Title A–Z.</option>
+        <option value="title-desc">Title Z–A.</option>
       </select>
     </div>
   )
