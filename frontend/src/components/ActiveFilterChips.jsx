@@ -8,7 +8,6 @@ export default function ActiveFilterChips() {
     language: searchParams.get("language"),
     level: searchParams.get("level"),
     source: searchParams.get("source"),
-    category: searchParams.get("category"),
   }
 
   const activeFilters = Object.entries(filters)

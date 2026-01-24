@@ -28,7 +28,6 @@ export default function CoursesPage() {
     language: "",
     level: "",
     source: "",
-    category: "",
   })
 
   const debouncedSearch = useDebounced(filters.search, 500)
@@ -40,17 +39,17 @@ export default function CoursesPage() {
     if (filters.language) p.language = filters.language
     if (filters.level) p.level = filters.level
     if (filters.source) p.source = filters.source
-    if (filters.category) p.category = filters.category
-    // Add pagination
+    // Add pagination - χρησιμοποιούμε offset αντί για page
     const page = parseInt(searchParams.get("page")) || 1
     const limit = 20
-    if (page > 1) p.page = page
+    const offset = (page - 1) * limit
+    p.offset = offset
     p.limit = limit
     // Add sort
     const sort = searchParams.get("sort")
     if (sort) p.sort = sort
     return p
-  }, [debouncedSearch, filters.language, filters.level, filters.source, filters.category, searchParams])
+  }, [debouncedSearch, filters.language, filters.level, filters.source, searchParams])
 
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -83,16 +82,17 @@ export default function CoursesPage() {
     loadFeatured()
   }, [])
 
-  useEffect(() => {
+      useEffect(() => {
     async function loadCourses() {
       setLoading(true)
       setError("")
       try {
         const data = await fetchCourses(queryParams)
         setCourses(data.courses || data)
+        const currentPage = parseInt(searchParams.get("page")) || 1
         setPagination({
           total: data.total || 0,
-          page: data.page || 1,
+          page: currentPage,
           limit: data.limit || 20,
           pages: data.pages || 1
         })
@@ -105,10 +105,10 @@ export default function CoursesPage() {
       }
     }
     loadCourses()
-  }, [queryParams])
+  }, [queryParams, searchParams])
 
   function clearFilters() {
-    setFilters({ search: "", language: "", level: "", source: "", category: "" })
+    setFilters({ search: "", language: "", level: "", source: "" })
   }
 
   const handleRetry = () => {

@@ -7,7 +7,6 @@ export default function FiltersBar({
   const languages = metadata?.languages ?? []
   const levels = metadata?.levels ?? []
   const sources = metadata?.sources ?? []
-  const categories = metadata?.categories ?? []
 
   function setField(field, value) {
     onChange({ ...filters, [field]: value })
@@ -74,20 +73,7 @@ export default function FiltersBar({
           </select>
         </div>
 
-        <div className="field">
-          <label className="field-label">Category</label>
-          <select
-            className="select"
-            value={filters.category || ""}
-            onChange={(e) => setField("category", e.target.value)}
-          >
-            <option value="">All</option>
-            {categories.map((x) => (
-              <option key={x} value={x}>{x}</option>
-            ))}
-          </select>
-          {categories.length === 0 && <div className="muted small">No category values in DB yet</div>}
-        </div>
+
       </div>
 
       <div className="filters-bottom">
