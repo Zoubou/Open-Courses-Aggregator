@@ -7,12 +7,12 @@ from pyspark.sql.window import Window
 # initialize spark and load data
 spark, mongo_uri = get_spark_session("CourseClusteringJob")
 df = spark.read.format("mongodb").load()
-
+df = df.filter(col("language") == "english")
 # feature extraction
 full_df = build_features(df).cache()
 
 # clustering logic
-k = 8
+k = 12
 bkm = BisectingKMeans(featuresCol="pcaFeatures", predictionCol="cluster_id", k=k, maxIter=20)
 cluster_model = bkm.fit(full_df)
 clustered_df = cluster_model.transform(full_df)
@@ -29,7 +29,7 @@ cluster_words = clustered_df.select(col("_id").alias("course_id"), "cluster_id",
 word_counts = cluster_words.groupBy("cluster_id", "word").count()
 window_keywords = Window.partitionBy("cluster_id").orderBy(col("count").desc())
 top_words = word_counts.withColumn("rank", row_number().over(window_keywords)) \
-    .filter(col("rank") <= 10)
+    .filter(col("rank") <= 6)
 
 # write keywords
 top_words.write.format("mongodb") \
