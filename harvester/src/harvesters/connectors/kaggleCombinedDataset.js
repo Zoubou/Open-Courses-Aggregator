@@ -36,6 +36,16 @@ function detectLanguageFromText(...texts) {
   return l ? l.name.toLowerCase() : undefined;
 } 
 
+function cleanDescription(text) {
+  if (text == null) return undefined;
+  let s = String(text).trim();
+  // Remove leading repeated 'Description' (case-insensitive) followed by colon/dash/space
+  s = s.replace(/^(?:\s*(?:description)\s*[:\-–—]\s*)+/i, "");
+  // If there's still a leading 'description' word followed by whitespace, remove it
+  s = s.replace(/^(?:\s*(?:description)\s+)+/i, "");
+  s = s.trim();
+  return s || undefined;
+} 
 function normalizeLevel(levelRaw) {
   const s = String(levelRaw ?? "").trim().toLowerCase();
   if (!s) return "unknown";
@@ -98,11 +108,12 @@ function toCourseDoc(item) {
   const link = pickLink(item);
 
   const normalizedLang = normalizeLanguageField(item.language);
-  const detectedLang = detectLanguageFromText(title, item.description);
+  const cleanedDescription = cleanDescription(item.description);
+  const detectedLang = detectLanguageFromText(title, cleanedDescription);
 
   return {
     title,
-    description: item.description ? String(item.description) : undefined,
+    description: cleanedDescription,
     keywords: normalizeKeywords(item),
     language: normalizedLang || detectedLang || undefined,
     level: normalizeLevel(item.level),
