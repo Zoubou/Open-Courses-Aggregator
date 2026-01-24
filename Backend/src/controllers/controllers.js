@@ -46,13 +46,11 @@ export async function getSimilarCourses(req, res) {
     try {
         const { id } = req.params;
         const result = await services.getSimilarCourses(id);
-        
-        if (!result) {
+        if (!result || !Array.isArray(result)) {
             return res.status(200).json([]);
         }
 
-        const similarCourses = result.similar_courses || [];
-        res.json(similarCourses); 
+        res.json(result); 
     } catch (error) {
         console.error("getSimilarCourses error:", error);
         res.status(200).json([]);
