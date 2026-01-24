@@ -42,12 +42,74 @@ LANG_MAP = {
     "it": "Italian",
     "ru": "Russian",
     "ar": "Arabic",
-    "zh-cn": "Chinese",
-    "zh-tw": "Chinese",
+    "zh-cn": "Chinese (Simplified)",
+    "zh-tw": "Chinese (Traditional)",
     "zh": "Chinese",
     "ja": "Japanese",
     "ko": "Korean",
     "hi": "Hindi",
+    "tr": "Turkish",
+    "nl": "Dutch",
+    "sv": "Swedish",
+    "fi": "Finnish",
+    "no": "Norwegian",
+    "da": "Danish",
+    "pl": "Polish",
+    "cs": "Czech",
+    "el": "Greek",
+    "he": "Hebrew",
+    "id": "Indonesian",
+    "th": "Thai",
+    "vi": "Vietnamese",
+    "uk": "Ukrainian",
+    "ro": "Romanian",
+    "hu": "Hungarian",
+    "bg": "Bulgarian",
+    "fa": "Persian",
+    "sr": "Serbian",
+    "hr": "Croatian",
+    "sk": "Slovak",
+    "sl": "Slovenian",
+    "et": "Estonian",
+    "lt": "Lithuanian",
+    "lv": "Latvian",
+    "ms": "Malay",
+    "ca": "Catalan",
+    "eu": "Basque",
+    "gl": "Galician",
+    "mt": "Maltese",
+    "is": "Icelandic",
+    "sq": "Albanian",
+    "af": "Afrikaans",
+    "sw": "Swahili",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "ml": "Malayalam",
+    "bn": "Bengali",
+    "pa": "Punjabi",
+    "gu": "Gujarati",
+    "mr": "Marathi",
+    "ur": "Urdu",
+    "kn": "Kannada",
+    "or": "Odia",
+    "si": "Sinhala",
+    "my": "Burmese",
+    "km": "Khmer",
+    "lo": "Lao",
+    "am": "Amharic",
+    "zu": "Zulu",
+    "xh": "Xhosa",
+    "st": "Southern Sotho",
+    "tn": "Tswana",
+    "ts": "Tsonga",
+    "ss": "Swati",
+    "ve": "Venda",
+    "nr": "South Ndebele",
+    "rw": "Kinyarwanda",
+    "so": "Somali",
+    "yo": "Yoruba",
+    "ig": "Igbo",
+    "ha": "Hausa",
 }
 
 UNKNOWN = "Unknown"
@@ -66,7 +128,9 @@ def load_env_from_harvester() -> None:
 
 
 def detect_language_from_text(text: str, min_confidence: float = 0.7) -> Tuple[str, float]:
-    """Return (language_name, confidence)."""
+    """
+    Return (language_name, confidence). If language is not in LANG_MAP, return ISO code as name.
+    """
     if not text or not text.strip():
         return UNKNOWN, 0.0
     try:
@@ -78,7 +142,8 @@ def detect_language_from_text(text: str, min_confidence: float = 0.7) -> Tuple[s
     best = langs[0]
     code = best.lang.lower()
     prob = float(best.prob)
-    name = LANG_MAP.get(code, UNKNOWN)
+    # Use pretty name if available, else fallback to ISO code
+    name = LANG_MAP.get(code, code if prob >= min_confidence else UNKNOWN)
     if prob < min_confidence:
         return UNKNOWN, prob
     return name, prob

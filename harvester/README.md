@@ -64,6 +64,10 @@ Cleaning scripts:
 
 Automatic run: `npm start` now runs the cleaner automatically before import (npm `prestart`) and applies post-import fixes (language detection and DB description fixes via `fix_course_metadata.py`) using `poststart`.
 
+Add a new external CSV source and import it:
+- `python scripts/new_source.py --apply` — fetches the default catalog (`https://waf.cs.illinois.edu/discovery/course-catalog.csv`), maps columns, appends new rows to `src/harvesters/data/kaggle/combined_dataset.json`, and runs `npm run import:combined` to insert/upsert into MongoDB.
+- Use `--url` to specify a different CSV and `--provider` to set a provider name.
+
 Note: `fix_course_metadata.py` requires Python and the `langdetect`, `pymongo`, and `python-dotenv` packages if you want the fixer to run. You can run the fixer manually with:
 
 - `python scripts/fix_course_metadata.py --apply`

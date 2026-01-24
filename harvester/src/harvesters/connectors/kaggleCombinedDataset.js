@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
 import path from "node:path";
+import { parse } from "csv-parse/sync";
 
 import Course from "../../models/course.js";
 import { franc } from "franc";
@@ -133,7 +135,46 @@ async function readCombinedDatasetJSON() {
 }
 
 export async function fullImportKaggleCombinedDataset() {
+  // Start with the canonical combined JSON
   const rows = await readCombinedDatasetJSON();
+
+  // If there are any CSVs in new_data, merge them into `rows` in-memory so
+  // the importer will include freshly downloaded CSVs without requiring a
+  // prior merge step. This does not overwrite the combined JSON file.
+  const NEW_DATA_DIR = path.resolve("src/harvesters/data/new_data");
+  if (fsSync.existsSync(NEW_DATA_DIR)) {
+    const files = fsSync.readdirSync(NEW_DATA_DIR).filter((f) => /\.csv$/i.test(f));
+    if (files.length) {
+      const existingIds = new Set(rows.map((it) => (it.link || it.title || JSON.stringify(it).slice(0, 200))));
+      for (const f of files) {
+        try {
+          const txt = fsSync.readFileSync(path.join(NEW_DATA_DIR, f), "utf-8");
+          const parsed = parse(txt, { columns: true, skip_empty_lines: true });
+          for (const r of parsed) {
+            const item = {
+              title: (r.title || r.name || "").toString().trim(),
+              description: (r.description || r.overview || r.summary || "").toString().trim(),
+              link: (r.link || r.url || "").toString().trim() || undefined,
+              language: (r.language || r.lang || "").toString().trim() || undefined,
+              tags: r.tags ? (Array.isArray(r.tags) ? r.tags : r.tags.toString().split(',').map(s => s.trim()).filter(Boolean)) : undefined,
+              last_update: r.last_update || r.updated || r.date || undefined,
+              provider: r.provider || undefined,
+            };
+            const id = item.link || item.title || JSON.stringify(item).slice(0, 200);
+            if (!existingIds.has(id)) {
+              rows.push(item);
+              existingIds.add(id);
+            }
+          }
+        } catch (err) {
+          // ignore malformed CSVs but log a message to help debugging
+          // (don't throw; importer should be resilient)
+          // eslint-disable-next-line no-console
+          console.warn(`Failed to parse CSV ${f} in new_data: ${err.message}`);
+        }
+      }
+    }
+  }
 
   const ops = [];
   for (const item of rows) {

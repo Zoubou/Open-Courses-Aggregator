@@ -4,12 +4,13 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "prestart": "npm run clean:combined",
-    "start": "cross-env IMPORT_SOURCES=kaggle,kaggle2 node index.js",
-    "poststart": "python scripts/fix_course_metadata.py --apply",
-    "clean:combined": "node scripts/clean_kaggle_descriptions.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "prestart": "npm run clean:combined && npm run import:combined",
+  "start": "cross-env IMPORT_MODE=full IMPORT_SOURCES=kaggle,kaggle2,illinois node index.js",
+  "poststart": "python scripts/fix_course_metadata.py --apply --batch-size 100",
+  "import:combined": "node scripts/import_combined.mjs",
+  "clean:combined": "node scripts/clean_kaggle_descriptions.mjs",
+  "test": "echo \"Error: no test specified\" && exit 1"
+},
   "dependencies": {
     "cross-env": "^7.0.3",
     "csv-parse": "^5.6.0",
