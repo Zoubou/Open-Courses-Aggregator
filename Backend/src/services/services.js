@@ -118,7 +118,16 @@ export async function getSimilarCourses(id) {
     try {
         const similaritiesCollection = Course.db.collection('courses_similarities');
         const similarityDoc = await similaritiesCollection.findOne({ course_id: id });
-        return similarityDoc?.similar_courses || [];
+        
+        if (!similarityDoc || !similarityDoc.similar_courses) {
+            return [];
+        }
+        
+        // Extract course IDs from similar_courses and fetch full course data
+        const similarCourseIds = similarityDoc.similar_courses.map(sc => sc.course_id);
+        const courses = await Course.find({ _id: { $in: similarCourseIds } });
+        
+        return courses;
     } catch (error) {
         return [];
     }
