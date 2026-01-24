@@ -58,3 +58,12 @@ In PowerShell:
 
 - Kaggle combined JSON: `src/harvesters/data/kaggle/combined_dataset.json`
 - Kaggle2 CSV dataset: `src/harvesters/data/kaggle2/final_cleaned_dataset.csv`
+
+Cleaning scripts:
+- `npm run clean:combined` — remove noisy leading tokens (e.g. "Description:"), strip HTML tags (e.g. `<p>`) and decode common HTML entities in `combined_dataset.json`
+
+Automatic run: `npm start` now runs the cleaner automatically before import (npm `prestart`) and applies post-import fixes (language detection and DB description fixes via `fix_course_metadata.py`) using `poststart`.
+
+Note: `fix_course_metadata.py` requires Python and the `langdetect`, `pymongo`, and `python-dotenv` packages if you want the fixer to run. You can run the fixer manually with:
+
+- `python scripts/fix_course_metadata.py --apply`
