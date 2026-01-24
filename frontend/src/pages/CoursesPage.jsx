@@ -83,7 +83,7 @@ export default function CoursesPage() {
       try {
         const data = await fetchFeaturedCourses()
         const coursesArray = Array.isArray(data) ? data : (data.courses || [])
-        setFeatured(coursesArray.slice(0, 5))
+        setFeatured(coursesArray.slice(0, 10))
       } catch (e) {
         console.error("Failed to fetch featured courses", e)
       }

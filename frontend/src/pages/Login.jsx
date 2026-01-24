@@ -24,47 +24,63 @@ export default function Login() {
 
   return (
     <div className="page-center">
-      <div className="card narrow">
-        <h1>Login</h1>
-        <p className="muted">
-          Open Courses Aggregator – Admin access
+      <div className="card narrow login-card">
+        <div className="login-header">
+          <div className="logo-icon">📚</div>
+          <h1 className="login-title">Open Courses</h1>
+          <h2 className="login-subtitle">Aggregator</h2>
+        </div>
+
+        <p className="login-description">
+          Premium platform for discovering, learning, and organizing courses
         </p>
 
-        <form className="form" onSubmit={handleSubmit}>
-          <label className="label">
-            <span>Username</span>
-            <input
-              className="input"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              required
-            />
-          </label>
+        <form className="form login-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="label">
+              <span className="label-text">Username</span>
+              <input
+                className="input login-input"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                required
+              />
+            </label>
+          </div>
 
-          <label className="label">
-            <span>Password</span>
-            <input
-              className="input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="admin"
-              required
-            />
-          </label>
+          <div className="form-group">
+            <label className="label">
+              <span className="label-text">Password</span>
+              <input
+                className="input login-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+            </label>
+          </div>
 
-          {error && <p className="error">{error}</p>}
+          {error && (
+            <div className="error-message">
+              <span>⚠</span> {error}
+            </div>
+          )}
 
-          <button className="button primary" type="submit">
-            Login
+          <button className="button login-button" type="submit">
+            <span>Sign In</span>
+            <span className="arrow">→</span>
           </button>
         </form>
 
-        <p className="hint">
-          Demo credentials: <b>admin / admin</b>
-        </p>
+        <div className="login-footer">
+          <p className="hint-text">
+            Demo: <code>admin</code> / <code>admin</code>
+          </p>
+        </div>
       </div>
     </div>
   )
