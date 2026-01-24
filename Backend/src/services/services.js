@@ -7,6 +7,15 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
+ * Βοηθητική συνάρτηση: Αγνοεί τους ειδικούς χαρακτήρες στην αρχή και επιστρέφει το πρώτο γράμμα
+ */
+function extractFirstAlpha(str) {
+    // Αφαιρούμε όλα τα μη-αλφαβητικά χαρακτήρα από την αρχή
+    const match = str.replace(/^[^a-zA-Z0-9Ά-Ώά-ώ]+/, '');
+    return match;
+}
+
+/**
  * Φέρνει μαθήματα με βάση τα φίλτρα (Αναζήτηση, Γλώσσα, Επίπεδο, Πηγή)
  */
 export async function getCourses(filters) {
@@ -44,23 +53,40 @@ export async function getCourses(filters) {
 
         // Λογική Ταξινόμησης
         let sortObj = { last_update: -1 }; // Default sort
+        let isTitleSort = false;
         
         if (filters.sort === 'oldest') {
             sortObj = { last_update: 1 };
         } else if (filters.sort === 'title-asc') {
             sortObj = { title: 1 };
+            isTitleSort = true;
         } else if (filters.sort === 'title-desc') {
             sortObj = { title: -1 };
+            isTitleSort = true;
         }
 
         // Εκτέλεση του query στη MongoDB - πρώτα φέρνε το total count
         const total = await Course.countDocuments(query);
         
         // Περιορίζουμε τα αποτελέσματα για καλύτερη απόδοση στο Front-end
-        const courses = await Course.find(query)
+        let courses = await Course.find(query)
                     .sort(sortObj)
                     .skip(offset)
                     .limit(limit);
+        
+        // Αν κάνουμε sort by title, ταξινόμησε client-side αγνοώντας τους ειδικούς χαρακτήρες
+        if (isTitleSort) {
+            courses = courses.sort((a, b) => {
+                const titleA = extractFirstAlpha(a.title || '');
+                const titleB = extractFirstAlpha(b.title || '');
+                
+                if (filters.sort === 'title-asc') {
+                    return titleA.localeCompare(titleB, 'el', { sensitivity: 'base' });
+                } else {
+                    return titleB.localeCompare(titleA, 'el', { sensitivity: 'base' });
+                }
+            });
+        }
         
         return {
             courses,
@@ -174,10 +200,33 @@ export async function getMetadata() {
     const languages = await Course.distinct("language");
     const levels = await Course.distinct("level");
     const sources = await Course.distinct("source.name");
-    const categories = await Course.distinct("category"); 
+    const categories = await Course.distinct("category");
+    
+    // Φίλτραρε τις γλώσσες - άφησε μόνο αυτές που υπάρχουν σε τουλάχιστον ένα course
+    const languagesWithCourses = await Course.aggregate([
+        {
+            $group: {
+                _id: "$language",
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $match: { count: { $gt: 0 } }
+        },
+        {
+            $project: { _id: 1 }
+        },
+        {
+            $sort: { _id: 1 }
+        }
+    ]);
+
+    const filteredLanguages = languagesWithCourses
+        .map(doc => doc._id)
+        .filter(lang => lang !== null && lang !== undefined && lang !== '');
 
     return {
-        languages,
+        languages: filteredLanguages,
         levels,
         sources,
         categories
