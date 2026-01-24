@@ -8,6 +8,21 @@ export default function FiltersBar({
   const levels = metadata?.levels ?? []
   const sources = metadata?.sources ?? []
 
+  const categoryNames = {
+    0: "Google Cloud Services",
+    1: "Cloud Computing (AWS/Azure)",
+    2: "Healthcare & Medical",
+    3: "Business Strategy",
+    4: "Marketing & Social Media",
+    5: "Project & Risk Management",
+    6: "Databases (SQL/NoSQL)",
+    7: "Data Science & Statistics",
+    8: "Artificial Intelligence",
+    9: "Software Engineering",
+    10: "Programming Languages",
+    11: "Web Development"
+  }
+
   function setField(field, value) {
     onChange({ ...filters, [field]: value })
   }
@@ -73,7 +88,19 @@ export default function FiltersBar({
           </select>
         </div>
 
-
+        <div className="field">
+          <label className="field-label">Category</label>
+          <select
+            className="select"
+            value={filters.category || ""}
+            onChange={(e) => setField("category", e.target.value)}
+          >
+            <option value="">All</option>
+            {Object.entries(categoryNames).map(([key, name]) => (
+              <option key={key} value={key}>{name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="filters-bottom">

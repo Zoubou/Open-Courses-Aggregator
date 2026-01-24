@@ -65,8 +65,10 @@ export default function CourseDetailsPage() {
 
   return (
     <div className="content">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <Link to="/app" className="muted">← Back to courses</Link>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <Link to="/app" className="back-btn">
+          <span style={{ fontSize: 18, marginRight: 6 }}>←</span> Back to Courses
+        </Link>
         <BookmarkButton
           courseId={id}
           isBookmarked={isBookmarked(id)}
@@ -74,14 +76,22 @@ export default function CourseDetailsPage() {
         />
       </div>
 
-      <h1 style={{ marginTop: 10 }}>{course.title}</h1>
-      <div className="muted">
-        {course.language || "unknown"} • {course.level || "unknown"} • {course.source?.name || "unknown"}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ marginTop: 0, marginBottom: 4 }}>{course.title}</h1>
+          <div className="muted">
+            {course.language || "unknown"} • {course.level || "unknown"} • {course.source?.name || "unknown"}
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginTop: 16 }}>
-        <h3>Description</h3>
-        <p className="muted">{course.description || "No description available."}</p>
+      <div style={{ marginTop: 24, marginBottom: 24 }}>
+        <h3 style={{ marginBottom: 14 }}>Description</h3>
+        <div className="description-box">
+          <p className="description-text">
+            {course.description || "No description available."}
+          </p>
+        </div>
       </div>
 
       {course.link && (
