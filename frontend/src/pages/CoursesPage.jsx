@@ -57,6 +57,15 @@ export default function CoursesPage() {
   const [featured, setFeatured] = useState([])
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, pages: 1 })
 
+  // Set default sort to "title-asc" when component mounts
+  useEffect(() => {
+    if (!searchParams.get("sort")) {
+      const params = new URLSearchParams(searchParams)
+      params.set("sort", "title-asc")
+      setSearchParams(params)
+    }
+  }, [searchParams, setSearchParams])
+
   useEffect(() => {
     async function loadMetadata() {
       try {
