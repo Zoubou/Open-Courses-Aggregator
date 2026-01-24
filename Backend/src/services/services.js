@@ -34,11 +34,6 @@ export async function getCourses(filters) {
             query["source.name"] = filters.source;
         }
 
-        // Φίλτρο Κατηγορίας
-        if (filters.category) {
-            query.category = filters.category;
-        }
-
         // Αναζήτηση σε Τίτλο και Keywords (Case-insensitive)
         if (filters.search) {
             query.$or = [
