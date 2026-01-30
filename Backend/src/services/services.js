@@ -43,6 +43,41 @@ export async function getCourses(filters) {
             query["source.name"] = filters.source;
         }
 
+        // Φίλτρο Κατηγορίας: τα clusters αποθηκεύονται σε ξεχωριστή συλλογή `course_to_cluster`
+        // Η συλλογή περιέχει docs { course_id, cluster_id }.
+        if (filters.category) {
+            const cat = String(filters.category).trim();
+            const courseToClusterColl = Course.db.collection('course_to_cluster');
+
+            // Αν το category είναι αριθμητικό, θεωρούμε ότι είναι cluster_id
+            if (/^[0-9]+$/.test(cat)) {
+                const clusterId = Number(cat);
+                const docs = await courseToClusterColl.find({ cluster_id: clusterId }).project({ course_id: 1 }).toArray();
+
+                if (!docs || docs.length === 0) {
+                    // Δεν υπάρχουν μαθήματα για αυτή την κατηγορία -> επιστρέψτε κενό αποτέλεσμα
+                    return { courses: [], total: 0, limit, offset, pages: 0 };
+                }
+
+                const courseIds = docs.map(d => d.course_id).filter(Boolean);
+                if (courseIds.length === 0) {
+                    return { courses: [], total: 0, limit, offset, pages: 0 };
+                }
+
+                query._id = { $in: courseIds };
+            } else {
+                // Αν η τιμή δεν είναι αριθμητική, προσπαθούμε να δούμε αν είναι string representation
+                // of a cluster id; αν όχι, δεν περιορίζουμε (ή μπορούμε να επέστρεψουμε κενό).
+                const maybeNum = Number(cat);
+                if (!Number.isNaN(maybeNum)) {
+                    const docs = await Course.db.collection('course_to_cluster').find({ cluster_id: maybeNum }).project({ course_id: 1 }).toArray();
+                    const courseIds = docs.map(d => d.course_id).filter(Boolean);
+                    if (courseIds.length === 0) return { courses: [], total: 0, limit, offset, pages: 0 };
+                    query._id = { $in: courseIds };
+                }
+            }
+        }
+
         // Αναζήτηση σε Τίτλο και Keywords (Case-insensitive)
         if (filters.search) {
             query.$or = [
@@ -105,7 +140,34 @@ export async function getCourses(filters) {
  */
 export async function getCourseById(id) {
     try {
-        return await Course.findById(id);
+        const course = await Course.findById(id);
+        if (!course) return null;
+
+        const courseObj = course.toObject ? course.toObject() : course;
+
+        try {
+            const coll = Course.db.collection('course_to_cluster');
+            // try to find mapping by ObjectId or string id
+                const mapping = await coll.findOne({
+                    course_id: course._id.toString()  // !! string now
+                });            
+                if (mapping && mapping.cluster_id !== undefined && mapping.cluster_id !== null) {
+                const clusterId = mapping.cluster_id;
+                // fetch top keywords for this cluster to use as label
+                const keywordsColl = Course.db.collection('cluster_keywords');
+                const kws = await keywordsColl.find({ cluster_id: clusterId }).sort({ rank: 1 }).toArray();
+                
+
+                courseObj.cluster = {
+                    id: clusterId
+                    
+                };
+            }
+        } catch (e) {
+            console.warn('Failed to lookup cluster info for course', id, e);
+        }
+
+        return courseObj;
     } catch (error) {
         throw new Error("Database error while fetching course by ID: " + error.message);
     }

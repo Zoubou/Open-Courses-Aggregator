@@ -29,7 +29,7 @@ cluster_words = clustered_df.select(col("_id").alias("course_id"), "cluster_id",
 word_counts = cluster_words.groupBy("cluster_id", "word").count()
 window_keywords = Window.partitionBy("cluster_id").orderBy(col("count").desc())
 top_words = word_counts.withColumn("rank", row_number().over(window_keywords)) \
-    .filter(col("rank") <= 6)
+    .filter(col("rank") <= 10)
 
 # write keywords
 top_words.write.format("mongodb") \

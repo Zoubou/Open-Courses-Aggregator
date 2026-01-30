@@ -9,6 +9,7 @@ import PaginationControls from "../components/PaginationControls"
 import SortDropdown from "../components/SortDropdown"
 import ErrorState from "../components/ErrorState"
 import { fetchCourses, fetchMetadata, fetchFeaturedCourses } from "../api/courses"
+import { useRecommendations } from "../hooks/usePersonalization"
 
 function useDebounced(value, delay = 500) {
   const [debounced, setDebounced] = useState(value)
@@ -58,6 +59,7 @@ export default function CoursesPage() {
   const [error, setError] = useState("")
   const [featured, setFeatured] = useState([])
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, pages: 1 })
+  const { recommendations: recommended } = useRecommendations()
 
   // Set default sort to "title-asc" when component mounts
   useEffect(() => {
@@ -79,19 +81,8 @@ export default function CoursesPage() {
     }
     loadMetadata()
   }, [])
-
-  useEffect(() => {
-    async function loadFeatured() {
-      try {
-        const data = await fetchFeaturedCourses()
-        const coursesArray = Array.isArray(data) ? data : (data.courses || [])
-        setFeatured(coursesArray.slice(0, 10))
-      } catch (e) {
-        console.error("Failed to fetch featured courses", e)
-      }
-    }
-    loadFeatured()
-  }, [])
+  
+  
 
       useEffect(() => {
     async function loadCourses() {
@@ -185,7 +176,7 @@ export default function CoursesPage() {
             <hr style={{ margin: "32px 0", opacity: 0.2 }} />
 
             <CoursesCarousel
-              courses={featured}
+              courses={[...featured, ...recommended].slice(0, 12)}
               title="Featured & Recommended"
               isLoading={false}
             />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { fetchSimilarCourses } from "../api/courses"
 
 const BOOKMARKS_KEY = "courses_bookmarks"
 const RECENTLY_VIEWED_KEY = "courses_recently_viewed"
@@ -65,4 +66,86 @@ export function useRecentlyViewed() {
   }
 
   return { recentlyViewed, addViewedCourse, clearRecentlyViewed }
+}
+
+export function useRecommendations(options = {}) {
+  const { source = "both", perSource = 5, totalLimit = 20 } = options
+  const { bookmarks } = useBookmarks()
+  const { recentlyViewed } = useRecentlyViewed()
+
+  const [recommendations, setRecommendations] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [version, setVersion] = useState(0)
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        // collect ids to query
+        const ids = []
+        if ((source === "both" || source === "bookmarks") && bookmarks.length) {
+          ids.push(...bookmarks.slice(-perSource))
+        }
+        if ((source === "both" || source === "recent") && recentlyViewed.length) {
+          ids.push(...recentlyViewed.map((c) => c._id).slice(0, perSource))
+        }
+
+        const uniqueIds = Array.from(new Set(ids))
+        if (uniqueIds.length === 0) {
+          if (mounted) setRecommendations([])
+          return
+        }
+
+        // fetch in small batches to avoid flooding the API
+        const batchSize = 5
+        const allResults = []
+        for (let i = 0; i < uniqueIds.length; i += batchSize) {
+          const batch = uniqueIds.slice(i, i + batchSize)
+          const res = await Promise.all(
+            batch.map((id) => fetchSimilarCourses(id).catch((e) => null))
+          )
+          allResults.push(...res.filter(Boolean))
+        }
+
+        // flatten results (API may return array or object)
+        const flattened = allResults.flat()
+
+        // dedupe by _id, keep highest score if provided, exclude source ids
+        const exclude = new Set(uniqueIds)
+        const map = new Map()
+        for (const item of flattened) {
+          if (!item || !item._id) continue
+          if (exclude.has(item._id)) continue
+          const score = item.score || 0
+          if (!map.has(item._id) || (map.get(item._id).score || 0) < score) {
+            map.set(item._id, { ...item, score })
+          }
+        }
+
+        const sorted = Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0))
+        const finalList = sorted.slice(0, totalLimit)
+
+        if (mounted) setRecommendations(finalList)
+      } catch (e) {
+        if (mounted) setError(e)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [bookmarks, recentlyViewed, source, perSource, totalLimit, version])
+
+  return {
+    recommendations,
+    loading,
+    error,
+    refresh: () => setVersion((v) => v + 1),
+  }
 }

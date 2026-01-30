@@ -79,6 +79,15 @@ export default function CourseDetailsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
         <div style={{ flex: 1 }}>
           <h1 style={{ marginTop: 0, marginBottom: 4 }}>{course.title}</h1>
+          <div style={{ marginLeft: 12, textAlign: 'right' }}>
+          {course.cluster ? (
+            <div className="muted small">
+              <div style={{ fontWeight: 700 , fontSize: 20}}>Cluster {course.cluster.id}</div>
+            </div>
+          ) : (
+            <div className="muted small" style={{ fontWeight: 700, fontSize: 20 }}>Cluster: —</div>
+          )}
+        </div>
           <div className="muted">
             {course.language || "unknown"} • {course.level || "unknown"} • {course.source?.name || "unknown"}
           </div>

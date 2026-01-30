@@ -42,7 +42,7 @@ candidates = candidates.withColumn("cosine_similarity", expr("1 - (pow(lsh_dista
 
 # keep top 8
 window = Window.partitionBy("course_a_id").orderBy(col("cosine_similarity").desc())
-topk = candidates.withColumn("rank", row_number().over(window)).filter(col("rank") <= 8)
+topk = candidates.filter(col("cosine_similarity") > 0.6).withColumn("rank", row_number().over(window)).filter(col("rank") <= 8)
 
 # format results
 result_df = topk.select(

@@ -8,19 +8,19 @@ export default function FiltersBar({
   const levels = metadata?.levels ?? []
   const sources = metadata?.sources ?? []
 
-  const categoryNames = {
-    0: "Google Cloud Services",
-    1: "Cloud Computing (AWS/Azure)",
-    2: "Healthcare & Medical",
-    3: "Business Strategy",
-    4: "Marketing & Social Media",
-    5: "Project & Risk Management",
-    6: "Databases (SQL/NoSQL)",
-    7: "Data Science & Statistics",
-    8: "Artificial Intelligence",
-    9: "Software Engineering",
-    10: "Programming Languages",
-    11: "Web Development"
+ const categoryNames = {
+    0: "Google Cloud Infrastructure",
+    1: "Multi-Cloud Platforms (AWS/Azure)",
+    2: "Business Leadership & Soft Skills",
+    3: "Digital Marketing & Social Media",
+    4: "Finance & Project Management",
+    5: "IT Project Management & Agile",
+    6: "Healthcare & Informatics",
+    7: "Game Design & Research",
+    8: "Data Analytics & Statistics",
+    9: "Network Security & Systems Engineering",
+    10: "Computer Science & AI",
+    11: "Web Development (Python/JS)"
   }
 
   function setField(field, value) {
