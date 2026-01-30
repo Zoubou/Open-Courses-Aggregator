@@ -176,8 +176,8 @@ export default function CoursesPage() {
             <hr style={{ margin: "32px 0", opacity: 0.2 }} />
 
             <CoursesCarousel
-              courses={[...featured, ...recommended].slice(0, 12)}
-              title="Featured & Recommended"
+              courses={[...recommended].slice(0, 12)}
+              title="Recommended based on your activity"
               isLoading={false}
             />
           </>
