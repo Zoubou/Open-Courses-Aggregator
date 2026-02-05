@@ -5,7 +5,7 @@ from pyspark.ml.feature import (
 )
 from pyspark.sql.functions import col, concat_ws,when,lower, regexp_replace, lit
 
-def build_features(df):
+def build_features(df, minDF=5, maxDF=0.7, vocabSize=20000):
     #weight data 
     df_processed = df.withColumn(
     "description",
@@ -117,9 +117,9 @@ def build_features(df):
     cv = CountVectorizer(
         inputCol="tokens",
         outputCol="countFeatures",
-        vocabSize=20000,
-        minDF=5.0,
-        maxDF=0.7
+        vocabSize=vocabSize,
+        minDF=minDF,
+        maxDF=maxDF
     )
     idf = IDF(
         inputCol="countFeatures",
