@@ -10,7 +10,7 @@ spark, mongo_uri = get_spark_session("CourseSimilarity")
 df = spark.read.format("mongodb").load()
 
 # features extraction
-full_df = build_features(df)
+full_df,cv_model = build_features(df)
 
 # lsh bucketing
 lsh = BucketedRandomProjectionLSH(
