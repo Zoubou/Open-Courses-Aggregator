@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 export default function CourseCard({ course }) {
+  const location = useLocation()
   const title = course?.title || "Untitled"
   const level = course?.level || "unknown"
   const language = course?.language || "unknown"
@@ -21,7 +22,7 @@ export default function CourseCard({ course }) {
       <p className="course-desc muted" style={{ fontSize: "14px", marginBottom: "12px", lineHeight: 1.5 }}>{truncatedDesc}</p>
 
       <div className="course-actions">
-        <Link className="button primary" to={`/courses/${course._id}`}>
+        <Link className="button primary" to={`/courses/${course._id}${location.search}`}>
           View details
         </Link>
       </div>

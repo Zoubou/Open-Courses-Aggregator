@@ -17,7 +17,9 @@ router.get("/:id", controller.getCourseById);
 // 5. Συστάσεις παρόμοιων μαθημάτων (Spark-based)
 router.get("/:id/similar", controller.getSimilarCourses);
 
-// 6. Συγχρονισμός με εξωτερικό repo
-router.post("/sync/:source", controller.syncSource);
+
+// SSE endpoint: client connects to receive progress events; provide ?source=<name>
+router.get("/sync/stream", controller.syncSourceStream);
+ 
 
 export default router;

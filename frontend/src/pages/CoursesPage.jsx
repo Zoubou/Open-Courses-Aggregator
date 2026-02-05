@@ -26,11 +26,36 @@ export default function CoursesPage() {
 
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
-    language: "",
-    level: "",
-    source: "",
-    category: ""
+    language: searchParams.get("language") || "",
+    level: searchParams.get("level") || "",
+    source: searchParams.get("source") || "",
+    cluster: searchParams.get("cluster") || ""
   })
+
+  // Sync filters into the URL search params so navigation preserves them
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams)
+
+    if (filters.search) params.set("search", filters.search)
+    else params.delete("search")
+
+    if (filters.language) params.set("language", filters.language)
+    else params.delete("language")
+
+    if (filters.level) params.set("level", filters.level)
+    else params.delete("level")
+
+    if (filters.source) params.set("source", filters.source)
+    else params.delete("source")
+
+    if (filters.cluster) params.set("cluster", filters.cluster)
+    else params.delete("cluster")
+
+    // Reset to first page when filters change
+    params.delete("page")
+
+    setSearchParams(params)
+  }, [filters, setSearchParams])
 
   const debouncedSearch = useDebounced(filters.search, 500)
 
@@ -41,7 +66,7 @@ export default function CoursesPage() {
     if (filters.language) p.language = filters.language
     if (filters.level) p.level = filters.level
     if (filters.source) p.source = filters.source
-    if (filters.category) p.category = filters.category
+    if (filters.cluster) p.cluster = filters.cluster
     // Add pagination - χρησιμοποιούμε offset αντί για page
     const page = parseInt(searchParams.get("page")) || 1
     const limit = 20
@@ -52,7 +77,7 @@ export default function CoursesPage() {
     const sort = searchParams.get("sort")
     if (sort) p.sort = sort
     return p
-  }, [debouncedSearch, filters.language, filters.level, filters.source, filters.category, searchParams])
+  }, [debouncedSearch, filters.language, filters.level, filters.source, filters.cluster, searchParams])
 
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -110,7 +135,7 @@ export default function CoursesPage() {
   }, [queryParams, searchParams])
 
   function clearFilters() {
-    setFilters({ search: "", language: "", level: "", source: "", category: "" })
+    setFilters({ search: "", language: "", level: "", source: "", cluster: "" })
   }
 
   const handleRetry = () => {
@@ -141,7 +166,7 @@ export default function CoursesPage() {
         <nav className="nav">
           <Link className="navbtn" to="/bookmarks">Bookmarks</Link>
           <Link className="navbtn" to="/analytics">Analytics</Link>
-          <Link className="navbtn" to="/admin-sync">Admin Sync</Link>
+          <Link className="navbtn" to="/admin">Admin Sync</Link>
           <Link className="navbtn" to="/success">Account</Link>
         </nav>
       </header>

@@ -27,6 +27,7 @@ function parseImportMode() {
 function parseImportSources() {
   // Comma-separated: kaggle,kaggle2,illinois
   const raw = String(process.env.IMPORT_SOURCES ?? "kaggle,kaggle2,illinois");
+  console.log("Raw IMPORT_SOURCES:", raw);
   const parts = raw
     .split(",")
     .map((s) => s.trim().toLowerCase())

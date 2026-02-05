@@ -8,19 +8,27 @@ export default function FiltersBar({
   const levels = metadata?.levels ?? []
   const sources = metadata?.sources ?? []
 
- const categoryNames = {
-    0: "Google Cloud Infrastructure",
-    1: "Multi-Cloud Platforms (AWS/Azure)",
-    2: "Business Leadership & Soft Skills",
-    3: "Digital Marketing & Social Media",
-    4: "Finance & Project Management",
-    5: "IT Project Management & Agile",
-    6: "Healthcare & Informatics",
-    7: "Game Design & Research",
-    8: "Data Analytics & Statistics",
-    9: "Network Security & Systems Engineering",
-    10: "Computer Science & AI",
-    11: "Web Development (Python/JS)"
+ const clusterNames = { 
+    0: "Topic #1",
+    1: "Topic #2",
+    2: "Topic #3",
+    3: "Topic #4",
+    4: "Topic #5",
+    5: "Topic #6",
+    6: "Topic #7",
+    7: "Topic #8",
+    8: "Topic #9",
+    9: "Topic #10",
+    10: "Topic #11",
+    11: "Topic #12",
+    12: "Topic #13",
+    13: "Topic #14",
+    14: "Topic #15",
+    15: "Topic #16",
+    16: "Topic #17",
+    17: "Topic #18",
+    18: "Topic #19",
+    19: "Topic #20"
   }
 
   function setField(field, value) {
@@ -89,14 +97,14 @@ export default function FiltersBar({
         </div>
 
         <div className="field">
-          <label className="field-label">Category</label>
+          <label className="field-label">Topic</label>
           <select
             className="select"
-            value={filters.category || ""}
-            onChange={(e) => setField("category", e.target.value)}
+            value={filters.cluster || ""}
+            onChange={(e) => setField("cluster", e.target.value)}
           >
             <option value="">All</option>
-            {Object.entries(categoryNames).map(([key, name]) => (
+            {Object.entries(clusterNames).map(([key, name]) => (
               <option key={key} value={key}>{name}</option>
             ))}
           </select>

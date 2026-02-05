@@ -844,6 +844,44 @@ select option:checked {
 
 @keyframes pulse {
   0%,
+
+/* Cluster info box used on CourseDetailsPage */
+.cluster-box {
+  width: 160px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(25,25,35,0.6) 0%, rgba(15,15,22,0.5) 100%);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cluster-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: #ffffff;
+}
+
+.cluster-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cluster-keyword {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(125,125,255,0.08);
+  border: 1px solid rgba(125,125,255,0.12);
+  color: rgba(125,125,255,0.95);
+  font-size: 12px;
+  white-space: nowrap;
+}
   100% {
     opacity: 0.6;
   }
@@ -1272,6 +1310,55 @@ select {
 .description-text:first-letter {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.85);
+}
+
+/* Compact boxed keywords used inside the cluster box (top-right) */
+.cluster-keywords-box {
+  padding: 6px;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(100, 108, 255, 0.06) 0%,
+    rgba(75, 85, 255, 0.04) 100%
+  );
+  border: 1px solid rgba(100, 108, 255, 0.12);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+}
+
+.cluster-keywords-box .chip {
+  padding: 6px 6px;
+  font-size: 13px;
+  border-radius: 12px;
+}
+
+.cluster-keywords-box .chip:hover {
+  transform: translateY(-1px);
+}
+
+/* Grid layout for cluster keywords: 3 columns x 3 rows */
+.cluster-keywords-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px 4px; /* row-gap 1px, column-gap 4px */
+}
+
+.cluster-keywords-box .chip {
+  width: 100%;
+  padding: 0px 4px; /* zero vertical padding for tighter fit */
+  margin: 0; /* ensure no extra margins */
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 18px;
+  line-height: 1;
+  font-size: 13px;
+}
+.cluster-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
 }
 
 /* Responsive sort section */

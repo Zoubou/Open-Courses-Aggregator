@@ -8,7 +8,7 @@ export async function getCourses(req, res) {
             language: req.query.language,
             level: req.query.level,
             source: req.query.source,
-            category: req.query.category,
+            cluster: req.query.cluster,
             search: req.query.search,
             offset: req.query.offset,
             limit: req.query.limit,
@@ -56,18 +56,38 @@ export async function getSimilarCourses(req, res) {
         res.status(200).json([]);
     }
 }
+export async function syncSourceStream(req, res) {
+    const source = req.query.source;
+    if (!source) return res.status(400).json({ error: 'Missing source query param' });
 
-export async function syncSource(req, res) {
-    const { source } = req.params; // π.χ. kaggle ή kaggle2
-    
-    try {
-        
-        res.status(202).json({ message: `Sync started for ${source}. This may take a while.` });
-        
-        await services.triggerSync(source);
-    } catch (error) {
-        console.error("Sync Error:", error);
-    }
+    // Set headers for SSE
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+    });
+
+    const send = (data) => {
+        try {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+        } catch (e) {
+            console.error('SSE write error:', e);
+        }
+    };
+
+    send({ stage: 'started', message: `Sync started for ${source}` });
+    // Call service that accepts a progress callback for a single source
+    services.triggerSyncWithProgress(source, (progress) => {
+        send(progress);
+    }).then(() => {
+        send({ stage: 'finished', message: `Sync finished for ${source}` });
+        res.end();
+    }).catch((err) => {
+        console.error('SyncStream error:', err);
+        send({ stage: 'error', message: String(err) });
+        res.end();
+    });
 }
 
 export async function getAnalytics(req, res) {
@@ -78,6 +98,7 @@ export async function getAnalytics(req, res) {
         res.status(500).json({ error: "Failed to fetch analytics" });
     }
 }
+
 
 export async function getMetadata(req, res) {
     try {

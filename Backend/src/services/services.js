@@ -1,10 +1,13 @@
 import Course from "../../../harvester/src/models/course.js";
-import { exec } from 'child_process';
-import mongoose from 'mongoose';
+import { exec, spawn, spawnSync } from 'child_process';
+import { ObjectId } from 'mongodb';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+
+
 
 /**
  * Βοηθητική συνάρτηση: Αγνοεί τους ειδικούς χαρακτήρες στην αρχή και επιστρέφει το πρώτο γράμμα
@@ -45,15 +48,14 @@ export async function getCourses(filters) {
 
         // Φίλτρο Κατηγορίας: τα clusters αποθηκεύονται σε ξεχωριστή συλλογή `course_to_cluster`
         // Η συλλογή περιέχει docs { course_id, cluster_id }.
-        if (filters.category) {
-            const cat = String(filters.category).trim();
+        if (filters.cluster) {
+            const cat = String(filters.cluster).trim();
             const courseToClusterColl = Course.db.collection('course_to_cluster');
 
             // Αν το category είναι αριθμητικό, θεωρούμε ότι είναι cluster_id
             if (/^[0-9]+$/.test(cat)) {
                 const clusterId = Number(cat);
                 const docs = await courseToClusterColl.find({ cluster_id: clusterId }).project({ course_id: 1 }).toArray();
-
                 if (!docs || docs.length === 0) {
                     // Δεν υπάρχουν μαθήματα για αυτή την κατηγορία -> επιστρέψτε κενό αποτέλεσμα
                     return { courses: [], total: 0, limit, offset, pages: 0 };
@@ -64,7 +66,12 @@ export async function getCourses(filters) {
                     return { courses: [], total: 0, limit, offset, pages: 0 };
                 }
 
-                query._id = { $in: courseIds };
+                const normalizedCourseIds = courseIds.map(id => {
+                    const sid = String(id);
+                    return ObjectId.isValid(sid) ? new ObjectId(sid) : id;
+                });
+
+                query._id = { $in: normalizedCourseIds };
             } else {
                 // Αν η τιμή δεν είναι αριθμητική, προσπαθούμε να δούμε αν είναι string representation
                 // of a cluster id; αν όχι, δεν περιορίζουμε (ή μπορούμε να επέστρεψουμε κενό).
@@ -73,7 +80,12 @@ export async function getCourses(filters) {
                     const docs = await Course.db.collection('course_to_cluster').find({ cluster_id: maybeNum }).project({ course_id: 1 }).toArray();
                     const courseIds = docs.map(d => d.course_id).filter(Boolean);
                     if (courseIds.length === 0) return { courses: [], total: 0, limit, offset, pages: 0 };
-                    query._id = { $in: courseIds };
+
+                    const normalizedCourseIds = courseIds.map(id => {
+                        const sid = String(id);
+                        return ObjectId.isValid(sid) ? new ObjectId(sid) : id;
+                    });
+                    query._id = { $in: normalizedCourseIds };
                 }
             }
         }
@@ -156,11 +168,13 @@ export async function getCourseById(id) {
                 // fetch top keywords for this cluster to use as label
                 const keywordsColl = Course.db.collection('cluster_keywords');
                 const kws = await keywordsColl.find({ cluster_id: clusterId }).sort({ rank: 1 }).toArray();
-                
+
+                // Prefer the `word` field from cluster_keywords and limit to top 12
+                const extractedKeywords = (kws || []).map(k => (k && k.word) ? k.word : null).filter(Boolean).slice(0, 12);
 
                 courseObj.cluster = {
-                    id: clusterId
-                    
+                    id: clusterId,
+                    keywords: extractedKeywords
                 };
             }
         } catch (e) {
@@ -199,22 +213,147 @@ export async function getSimilarCourses(id) {
 /**
  * Endpoint για συγχρονισμό με harvester
  */
-export function triggerSync(source) {
+
+
+function runHarvester(singleSource, progressCb) {
     return new Promise((resolve, reject) => {
         const harvesterDir = path.resolve(__dirname, '../../../harvester');
         const harvesterFile = path.resolve(harvesterDir, 'index.js');
 
-        exec(`node "${harvesterFile}" --source=${source}`, { cwd: harvesterDir }, (error, stdout, stderr) => {
-            if (error) {
-                console.error("EXEC ERROR:", error); 
+        // Update progress message to show which specific source is running
+        progressCb({ stage: 'harvester_start', percent: 10, message: `Harvesting source: ${singleSource}` });
+
+        // Pass the specific source to the script
+        // Note: We pass singleSource for both args to ensure the script focuses on just this one
+        const harvesterEnv = { ...process.env, IMPORT_SOURCES: singleSource };
+        
+        const harvester = spawn('node', [harvesterFile, `--source=${singleSource}`, `--import-sources=${singleSource}`], {
+            cwd: harvesterDir,
+            env: harvesterEnv
+        });
+
+        harvester.stdout.on('data', (data) => {
+            const raw = String(data).trim();
+            console.log(`[harvester-${singleSource}] ${raw}`);
+            
+            // Optional: finer progress updates based on logs
+            if (/imported/i.test(raw)) {
+                progressCb({ stage: 'harvester_active', message: `Importing ${singleSource}...` });
             }
-            if (stderr) {
-                console.error("HARVESTER STDERR:", stderr);
+        });
+
+        harvester.stderr.on('data', (data) => {
+            console.error(`[harvester-${singleSource} stderr] ${String(data).trim()}`);
+        });
+
+        harvester.on('error', (err) => reject(err));
+
+        harvester.on('close', (code) => {
+            if (code === 0) {
+                resolve();
+            } else {
+                reject(new Error(`Harvester for ${singleSource} exited with code ${code}`));
             }
-            console.log("HARVESTER STDOUT:", stdout); 
         });
     });
 }
+function runSparkJobs(progressCb) {
+    return new Promise((resolve, reject) => {
+        const sparkDir = path.resolve(__dirname, '../../../SparkML');
+        const pythonPath = "/usr/bin/python3";
+
+        const pyScripts = [
+            { name: 'Clustering courses', file: 'courseClusters.py', start: 40, end: 75 },
+            { name: 'Calculating course similarities', file: 'coursesSimilarity.py', start: 75, end: 95 }
+        ];
+
+        // Helper to run a single script
+        const runPython = ({ file, name, start, end }) => new Promise((res, rej) => {
+            progressCb({ stage: 'spark_start', message: name, percent: start });
+
+            // IMPORTANT: passing process.env here so Python sees MONGO_URI
+            const py = spawn(pythonPath, [file], { 
+                cwd: sparkDir,
+                env: process.env 
+            });
+
+            py.stdout.on('data', (d) => {
+                const txt = String(d).trim();
+                console.log(`[${name} stdout] ${txt}`);
+                progressCb({ stage: 'spark_output', message: `${name}...` });
+            });
+
+            py.stderr.on('data', (d) => {
+                const txt = String(d).trim();
+                console.error(`[${name} stderr] ${txt}`);
+            });
+
+            py.on('error', (err) => {
+                console.error(`${name} spawn error:`, err);
+                progressCb({ stage: 'spark_error', message: `Failed to start ${name}. Check Python installation.` });
+                rej(err);
+            });
+
+            py.on('close', (code) => {
+                if (code === 0) {
+                    progressCb({ stage: 'spark_done', message: `${name} completed`, percent: end });
+                    res();
+                } else {
+                    progressCb({ stage: 'spark_done', message: `${name} failed`, percent: end });
+                    rej(new Error(`${name} exited with code ${code}`));
+                }
+            });
+        });
+
+        // Run scripts sequentially
+        runPython(pyScripts[0])
+            .then(() => runPython(pyScripts[1]))
+            .then(() => resolve())
+            .catch((err) => reject(err));
+    });
+}
+export function triggerSyncWithProgress(source, progressCb = () => {}) {
+    return new Promise(async (resolve) => {
+        try {
+            // --- Step A: Determine which sources to run ---
+            let sourcesToRun = [];
+            
+            if (source === 'all') {
+                // Get list from env or default, and split by comma
+                const list = 'kaggle,kaggle2,illinois';
+                sourcesToRun = list.split(',').map(s => s.trim());
+            } else {
+                sourcesToRun = [source];
+            }
+
+            console.log(`Starting sync for sources: ${sourcesToRun.join(', ')}`);
+
+            // --- Step B: Run Harvester for each source sequentially ---
+            for (const src of sourcesToRun) {
+                await runHarvester(src, progressCb);
+            }
+            
+            progressCb({ stage: 'harvester_done', message: 'All sources imported', percent: 40 });
+
+            // --- Step C: Run Spark Jobs ---
+            await runSparkJobs(progressCb);
+
+            // --- Done ---
+            progressCb({ stage: 'all_done', percent: 100, message: 'Sync Complete' });
+            resolve();
+
+        } catch (err) {
+            console.error('Sync process failed:', err);
+            progressCb({ stage: 'error', message: String(err) });
+            resolve(); // Resolve anyway so UI doesn't hang
+        }
+    });
+}
+/**
+ * Return current running sync or last sync status
+ */
+// (Previously added getSyncStatus removed)
+
 
 /**
  * Endpoint για στατιστικά

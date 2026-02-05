@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 // Emoji mapping based on keywords and content
 const getEmojiForCourse = (course) => {
@@ -35,6 +35,7 @@ export default function CoursesCarousel({ courses = [], title = "Recommended", i
   const scrollRef = useRef(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  const location = useLocation()
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -120,7 +121,7 @@ export default function CoursesCarousel({ courses = [], title = "Recommended", i
           {courses.map((course) => (
             <Link
               key={course._id}
-              to={`/courses/${course._id}`}
+              to={`/courses/${course._id}${location.search}`}
               className="carousel-item"
               aria-label={`View ${course.title}`}
             >

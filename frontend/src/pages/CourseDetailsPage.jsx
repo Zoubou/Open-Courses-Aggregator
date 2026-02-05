@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useParams, useNavigate } from "react-router-dom"
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom"
 import { fetchCourseById, fetchSimilarCourses, fetchCourses } from "../api/courses"
 import RecommendationBadge from "../components/RecommendationBadge"
 import BookmarkButton from "../components/BookmarkButton"
@@ -11,6 +11,7 @@ export default function CourseDetailsPage() {
   const navigate = useNavigate()
   const { isBookmarked, toggleBookmark } = useBookmarks()
   const { addViewedCourse } = useRecentlyViewed()
+  const location = useLocation()
 
   function handleKeywordClick(keyword) {
     navigate(`/app?search=${encodeURIComponent(keyword)}`)
@@ -31,18 +32,6 @@ export default function CourseDetailsPage() {
         const c = await fetchCourseById(id)
         let s = await fetchSimilarCourses(id)
         
-        // If Spark returns empty, use client-side fallback
-        if (!s || s.length === 0) {
-          try {
-            const allCoursesData = await fetchCourses({ limit: 100 })
-            const allCourses = allCoursesData.courses || allCoursesData
-            s = findClientSimilarCourses(c, allCourses, 3)
-            setUsingFallback(true)
-          } catch (e) {
-            console.warn("Could not load fallback similar courses:", e)
-            s = []
-          }
-        }
         
         setCourse(c)
         setSimilar(s)
@@ -63,10 +52,12 @@ export default function CourseDetailsPage() {
   if (error) return <div className="content error">{error}</div>
   if (!course) return <div className="content muted">Course not found.</div>
 
+  const clusterKeywords = course.cluster?.keywords ?? course.cluster_keywords ?? course.cluster?.cluster_keywords ?? []
+
   return (
     <div className="content">
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 8 }}>
-        <Link to="/app" className="back-btn">
+        <Link to={`/app${location.search}`} className="back-btn">
           <span style={{ fontSize: 18, marginRight: 6 }}>←</span> Back to Courses
         </Link>
         <BookmarkButton
@@ -75,21 +66,33 @@ export default function CourseDetailsPage() {
           onToggle={toggleBookmark}
         />
       </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "stretch", gap: 16 }}>
         <div style={{ flex: 1 }}>
           <h1 style={{ marginTop: 0, marginBottom: 4 }}>{course.title}</h1>
-          <div style={{ marginLeft: 12, textAlign: 'right' }}>
-          {course.cluster ? (
-            <div className="muted small">
-              <div style={{ fontWeight: 700 , fontSize: 20}}>Cluster {course.cluster.id}</div>
-            </div>
-          ) : (
-            <div className="muted small" style={{ fontWeight: 700, fontSize: 20 }}>Cluster: —</div>
-          )}
-        </div>
           <div className="muted">
             {course.language || "unknown"} • {course.level || "unknown"} • {course.source?.name || "unknown"}
+          </div>
+        </div>
+        <div className="cluster-box">
+          <div className="cluster-title" >Topic #{course.cluster?.id + 1 ?? '—'}</div>
+          <div className="cluster-keywords-box description-box" style={{ marginTop: 8 }}>
+          <p className ="muted small" style={{ marginBottom: 8, textAlign: "center" }}>Topic Keywords</p>
+            {clusterKeywords && clusterKeywords.length > 0 ? (
+              <div className="cluster-keywords-grid">
+                {clusterKeywords.map((k, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="chip"
+                    onClick={() => handleKeywordClick(k)}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="muted small">No topic keywords</div>
+            )}
           </div>
         </div>
       </div>
@@ -102,6 +105,8 @@ export default function CourseDetailsPage() {
           </p>
         </div>
       </div>
+
+      
 
       {course.link && (
         <p style={{ marginTop: 12 }}>
@@ -151,7 +156,7 @@ export default function CourseDetailsPage() {
                   />
                 )}
               </div>
-              <Link className="navbtn" to={`/courses/${c._id}`}>View</Link>
+              <Link className="navbtn" to={`/courses/${c._id}${location.search}`}>View</Link>
             </li>
           ))}
         </ul>
