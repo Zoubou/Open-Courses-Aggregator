@@ -45,7 +45,7 @@ course_topics.select(
  .mode("overwrite").save()
 
 # extract keywords for each topic
-topics = lda_model.describeTopics(10)
+topics = lda_model.describeTopics(15)
 
 def idx_to_word(indices):
     return [vocab[i] for i in indices if i < len(vocab)]
@@ -57,9 +57,6 @@ topic_keywords = topics.withColumn(
     idx_to_word_udf(col("termIndices"))
 )
 
-
-# write keywords
-# explode keywords so each keyword becomes its own document: { cluster_id, word, rank }
 keywords_expanded = topic_keywords.select(
     col("topic").alias("cluster_id"),
     posexplode(col("keywords")).alias("pos", "word")

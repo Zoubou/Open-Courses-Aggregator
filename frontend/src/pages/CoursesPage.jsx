@@ -8,7 +8,7 @@ import ActiveFilterChips from "../components/ActiveFilterChips"
 import PaginationControls from "../components/PaginationControls"
 import SortDropdown from "../components/SortDropdown"
 import ErrorState from "../components/ErrorState"
-import { fetchCourses, fetchMetadata, fetchFeaturedCourses } from "../api/courses"
+import { fetchCourses, fetchMetadata, fetchFeaturedCourses, fetchCourseById } from "../api/courses"
 import { useRecommendations } from "../hooks/usePersonalization"
 
 function useDebounced(value, delay = 500) {
@@ -85,6 +85,7 @@ export default function CoursesPage() {
   const [featured, setFeatured] = useState([])
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, pages: 1 })
   const { recommendations: recommended } = useRecommendations()
+  const [clusterKeywords, setClusterKeywords] = useState([])
 
   // Set default sort to "title-asc" when component mounts
   useEffect(() => {
@@ -134,6 +135,31 @@ export default function CoursesPage() {
     loadCourses()
   }, [queryParams, searchParams])
 
+  // When a cluster filter is active, try to fetch cluster keywords.
+  useEffect(() => {
+    let cancelled = false
+    async function loadClusterKeywords() {
+      setClusterKeywords([])
+      const cat = filters.cluster
+      if (!cat) return
+      // Only proceed for numeric cluster ids
+      if (!/^[0-9]+$/.test(String(cat).trim())) return
+      // Use the first course in the current results to get cluster info from backend
+      if (!courses || courses.length === 0) return
+      try {
+        const c = await fetchCourseById(courses[0]._id)
+        if (cancelled) return
+        const kws = c?.cluster?.keywords ?? c?.cluster_keywords ?? []
+        setClusterKeywords(Array.isArray(kws) ? kws.slice(0, 15) : [])
+      } catch (e) {
+        console.error('Failed to load cluster keywords', e)
+        setClusterKeywords([])
+      }
+    }
+    loadClusterKeywords()
+    return () => { cancelled = true }
+  }, [filters.cluster, courses])
+
   function clearFilters() {
     setFilters({ search: "", language: "", level: "", source: "", cluster: "" })
   }
@@ -181,8 +207,42 @@ export default function CoursesPage() {
 
         <ActiveFilterChips />
 
-        <div className="courses-controls">
-          <SortDropdown />
+        <div className="courses-controls" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 , width: '100%'}}>
+            {clusterKeywords && clusterKeywords.length > 0 && (
+                <div
+                  className="cluster-box"
+                  style={{
+                    margin: 0,
+                    width: "100%",
+                    minWidth: 360,
+                    maxWidth: 1020,
+                    minHeight: "10vh",
+                    padding: "0px 12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div className="cluster-title" style={{ fontSize: 16, fontWeight: 600 }}>
+                    Topic Keywords
+                  </div>
+                  <div
+                    className="cluster-keywords-box description-box"
+                    style={{ marginTop: 8, maxHeight: 96, overflowY: "auto" }}
+                  >
+                    <div className="cluster-keywords-grid">
+                      {clusterKeywords.map((k, i) => (
+                        <div key={i} className="chip cluster-keyword" style ={{fontSize: 14, padding: "4px 8px", color: "#ffffff"}}>{k}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+            )}
+          </div>
+          <div style={{ marginLeft: "0px" }}>
+            <SortDropdown />
+          </div>
         </div>
 
         {loading && <CourseListSkeleton count={6} />}

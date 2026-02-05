@@ -73,8 +73,6 @@ export async function getCourses(filters) {
 
                 query._id = { $in: normalizedCourseIds };
             } else {
-                // Αν η τιμή δεν είναι αριθμητική, προσπαθούμε να δούμε αν είναι string representation
-                // of a cluster id; αν όχι, δεν περιορίζουμε (ή μπορούμε να επέστρεψουμε κενό).
                 const maybeNum = Number(cat);
                 if (!Number.isNaN(maybeNum)) {
                     const docs = await Course.db.collection('course_to_cluster').find({ cluster_id: maybeNum }).project({ course_id: 1 }).toArray();
@@ -169,8 +167,8 @@ export async function getCourseById(id) {
                 const keywordsColl = Course.db.collection('cluster_keywords');
                 const kws = await keywordsColl.find({ cluster_id: clusterId }).sort({ rank: 1 }).toArray();
 
-                // Prefer the `word` field from cluster_keywords and limit to top 12
-                const extractedKeywords = (kws || []).map(k => (k && k.word) ? k.word : null).filter(Boolean).slice(0, 12);
+                // Prefer the `word` field from cluster_keywords and limit to top 15
+                const extractedKeywords = (kws || []).map(k => (k && k.word) ? k.word : null).filter(Boolean).slice(0, 15);
 
                 courseObj.cluster = {
                     id: clusterId,

@@ -69,7 +69,7 @@ export function useRecentlyViewed() {
 }
 
 export function useRecommendations(options = {}) {
-  const { source = "both", perSource = 5, totalLimit = 20 } = options
+  const { source = "both", perSource = 5, totalLimit = 20, bookmarkBoost = 1.2 } = options
   const { bookmarks } = useBookmarks()
   const { recentlyViewed } = useRecentlyViewed()
 
@@ -102,16 +102,27 @@ export function useRecommendations(options = {}) {
         // fetch in small batches to avoid flooding the API
         const batchSize = 5
         const allResults = []
+        // prepare a fast lookup for bookmark ids
+        const bookmarkSet = new Set(bookmarks.slice(-perSource))
         for (let i = 0; i < uniqueIds.length; i += batchSize) {
           const batch = uniqueIds.slice(i, i + batchSize)
           const res = await Promise.all(
-            batch.map((id) => fetchSimilarCourses(id).catch((e) => null))
+            batch.map(async (id) => {
+              try {
+                const r = await fetchSimilarCourses(id)
+                if (!r) return []
+                const arr = Array.isArray(r) ? r : [r]
+                return arr.map((item) => ({ ...item, _sourceId: id, _isBookmark: bookmarkSet.has(id) }))
+              } catch (e) {
+                return []
+              }
+            })
           )
-          allResults.push(...res.filter(Boolean))
+          allResults.push(...res.flat())
         }
 
-        // flatten results (API may return array or object)
-        const flattened = allResults.flat()
+        // flattened results are in allResults
+        const flattened = allResults
 
         // dedupe by _id, keep highest score if provided, exclude source ids
         const exclude = new Set(uniqueIds)
@@ -119,9 +130,12 @@ export function useRecommendations(options = {}) {
         for (const item of flattened) {
           if (!item || !item._id) continue
           if (exclude.has(item._id)) continue
-          const score = item.score || 0
-          if (!map.has(item._id) || (map.get(item._id).score || 0) < score) {
-            map.set(item._id, { ...item, score })
+          const baseScore = item.score || 0
+          const boostedScore = baseScore * (item._isBookmark ? bookmarkBoost : 1)
+          const existing = map.get(item._id)
+          const existingScore = existing ? existing.score : -Infinity
+          if (!existing || boostedScore > existingScore) {
+            map.set(item._id, { ...item, originalScore: baseScore, score: boostedScore })
           }
         }
 

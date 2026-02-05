@@ -844,6 +844,7 @@ select option:checked {
 
 @keyframes pulse {
   0%,
+  
 
 /* Cluster info box used on CourseDetailsPage */
 .cluster-box {
@@ -1199,8 +1200,9 @@ select {
 /* Sort Section Styling */
 .courses-controls {
   display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
+  min-height: 84px;
+  justify-content: space-between;
+  align-items: center;
   margin: 32px 0 32px;
   gap: 16px;
 }
@@ -1338,7 +1340,7 @@ select {
 /* Grid layout for cluster keywords: 3 columns x 3 rows */
 .cluster-keywords-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 5px 4px; /* row-gap 1px, column-gap 4px */
 }
 
